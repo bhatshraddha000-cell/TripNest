@@ -6,6 +6,7 @@ import './App.css'
 
 function App() {
 <<<<<<< HEAD
+<<<<<<< HEAD
   return (
     <div className="App">
       <h1>Hello Everyone </h1>
@@ -17,6 +18,11 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
+=======
+  const [count, setCount] = useState(0)
+
+  return (
+>>>>>>> 217a4185705a42161345b77650a1dc46814a59b5
     <>
       <section id="center">
         <div className="hero">
@@ -126,6 +132,9 @@ function App() {
       <section id="spacer"></section>
     </>
   )
+<<<<<<< HEAD
+>>>>>>> 217a4185705a42161345b77650a1dc46814a59b5
+=======
 >>>>>>> 217a4185705a42161345b77650a1dc46814a59b5
 }
 
