@@ -1,4 +1,4 @@
-package com.tripnnest.tripnest;
+package com.tripnest.tripnest;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
