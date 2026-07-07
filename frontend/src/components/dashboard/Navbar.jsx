@@ -1,4 +1,7 @@
+import { useTheme } from '../../context/ThemeContext.jsx'
+
 function Navbar({ userName, userEmail, onLogout }) {
+  const { theme, toggleTheme } = useTheme()
   const initials = (userName || 'Traveler')
     .split(' ')
     .map((word) => word[0])
@@ -22,6 +25,9 @@ function Navbar({ userName, userEmail, onLogout }) {
       </label>
 
       <div className="navbar-actions">
+        <button className="icon-button" type="button" aria-label="Toggle theme" onClick={toggleTheme}>
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
         <button className="icon-button" type="button" aria-label="Notifications">
           🔔
         </button>

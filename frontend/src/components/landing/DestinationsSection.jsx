@@ -9,7 +9,20 @@ const destinations = [
   { name: 'Japan', country: 'Asia', description: 'Cherry blossoms, tech cities, and quiet temples.', rating: '4.8' },
 ]
 
-function DestinationsSection() {
+function DestinationsSection({ searchValue }) {
+  const filteredDestinations = destinations.filter((destination) => {
+    const term = searchValue.trim().toLowerCase()
+
+    if (!term) {
+      return true
+    }
+
+    return [destination.name, destination.country, destination.description]
+      .join(' ')
+      .toLowerCase()
+      .includes(term)
+  })
+
   return (
     <section className="content-section" id="destinations">
       <div className="section-heading">
@@ -18,7 +31,7 @@ function DestinationsSection() {
       </div>
 
       <div className="destination-grid">
-        {destinations.map((destination) => (
+        {filteredDestinations.map((destination) => (
           <article className="destination-card" key={destination.name}>
             <div className="destination-image">✦</div>
             <div className="destination-body">

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { useTheme } from '../../context/ThemeContext.jsx'
 
 const links = [
   { label: 'Home', href: '#home' },
@@ -9,7 +11,9 @@ const links = [
   { label: 'Contact', href: '#contact' },
 ]
 
-function Navbar() {
+function Navbar({ searchValue, onSearchChange }) {
+  const { isAuthenticated, user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -34,12 +38,34 @@ function Navbar() {
         ))}
       </nav>
 
-      <div className="landing-nav-actions">
-        <Link className="text-link" to="/login">
-          Login
-        </Link>
+      <div className="landing-toolbar">
+        <label className="search-box navbar-search" htmlFor="navbar-search">
+          <span>🔎</span>
+          <input
+            id="navbar-search"
+            type="text"
+            placeholder="Search destinations..."
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+          />
+        </label>
+
+        <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label="Toggle theme">
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+
+        {isAuthenticated ? (
+          <Link className="text-link dashboard-link" to="/dashboard">
+            Dashboard
+          </Link>
+        ) : (
+          <Link className="text-link" to="/login">
+            Login
+          </Link>
+        )}
+
         <Link className="primary-button landing-cta" to="/login">
-          Get Started
+          {isAuthenticated ? (user?.fullName?.split(' ')[0] ?? 'Profile') : 'Get Started'}
         </Link>
       </div>
     </header>

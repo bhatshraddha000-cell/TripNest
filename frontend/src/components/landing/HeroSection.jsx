@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const slides = [
@@ -47,6 +47,7 @@ const slides = [
 function HeroSection() {
   const [activeSlide, setActiveSlide] = useState(0)
   const [typedText, setTypedText] = useState('')
+  const heroVisualRef = useRef(null)
 
   const currentSlide = useMemo(() => slides[activeSlide], [activeSlide])
 
@@ -77,6 +78,34 @@ function HeroSection() {
   function changeSlide(direction) {
     setActiveSlide((current) => (current + direction + slides.length) % slides.length)
   }
+
+  useEffect(() => {
+    let frameId = 0
+
+    const handlePointerMove = (event) => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId)
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        const x = (event.clientX / window.innerWidth - 0.5) * 8
+        const y = (event.clientY / window.innerHeight - 0.5) * 8
+        const clampedX = Math.max(-10, Math.min(10, x))
+        const clampedY = Math.max(-10, Math.min(10, y))
+
+        if (heroVisualRef.current) {
+          heroVisualRef.current.style.setProperty('--hero-tilt-x', `${clampedX * 0.25}px`)
+          heroVisualRef.current.style.setProperty('--hero-tilt-y', `${clampedY * 0.25}px`)
+        }
+      })
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.removeEventListener('pointermove', handlePointerMove)
+    }
+  }, [])
 
   return (
     <section className="hero-section" id="home">
@@ -112,16 +141,9 @@ function HeroSection() {
           <span>✓ Fast Planning</span>
         </div>
 
-        <div className="floating-elements" aria-hidden="true">
-          <span className="float-item airplane">✈</span>
-          <span className="float-item globe">🌍</span>
-          <span className="float-item pin">📍</span>
-          <span className="float-item suitcase">🧳</span>
-          <span className="float-item compass">🧭</span>
-        </div>
       </div>
 
-      <div className="hero-visual">
+      <div className="hero-visual" ref={heroVisualRef}>
         <div className="hero-carousel" key={currentSlide.name}>
           <img src={currentSlide.image} alt={currentSlide.name} />
           <div className="hero-card glass-card">
