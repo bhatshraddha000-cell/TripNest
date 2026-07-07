@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,8 +18,9 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
+import io.jsonwebtoken.security.WeakKeyException;
 
 @Service
 public class JwtService {
@@ -36,10 +36,11 @@ public class JwtService {
             throw new IllegalArgumentException("JWT secret is not configured");
         }
 
-        this.signingKey = new SecretKeySpec(
-                secret.getBytes(StandardCharsets.UTF_8),
-                SignatureAlgorithm.HS256.getJcaName()
-        );
+        try {
+            this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        } catch (WeakKeyException exception) {
+            throw new IllegalArgumentException("JWT secret must be at least 32 bytes long");
+        }
         this.jwtExpirationMs = jwtExpirationMs;
     }
 
