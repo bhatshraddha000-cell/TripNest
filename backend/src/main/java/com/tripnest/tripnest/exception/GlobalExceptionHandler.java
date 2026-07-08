@@ -55,12 +55,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex,
-            HttpHeaders headers,
-            HttpStatusCode status,
-            WebRequest request
-    ) {
-        return ResponseEntity.badRequest().body(Map.of("message", "Malformed request body"));
-    }
+protected ResponseEntity<Object> handleHttpMessageNotReadable(
+        HttpMessageNotReadableException ex,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+) {
+    ex.printStackTrace();
+
+    return ResponseEntity.badRequest().body(
+            Map.of("message", ex.getMostSpecificCause().getMessage())
+    );
+}
 }
