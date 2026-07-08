@@ -15,7 +15,7 @@ function LoginPage() {
   const [status, setStatus] = useState({ type: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
 
-  const redirectTo = location.state?.from?.pathname ?? '/dashboard'
+  const redirectTo = location.state?.from?.pathname ?? '/'
 
   if (isAuthenticated && !authLoading) {
     return <Navigate to={redirectTo} replace />
