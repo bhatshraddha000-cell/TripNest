@@ -81,6 +81,10 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false)
   }
 
+  function updateUser(updates) {
+    setUser((current) => (current ? { ...current, ...updates } : current))
+  }
+
   useEffect(() => {
     let cancelled = false
 
@@ -153,6 +157,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     loadCurrentUser,
+    updateUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -7,7 +7,9 @@ function WelcomeCard({ name, date, quote }) {
         <p className="welcome-copy">{date}</p>
         <blockquote>“{quote}”</blockquote>
       </div>
-      <div className="welcome-illustration">🌍</div>
+      <div className="welcome-illustration" aria-hidden="true">
+        <span className="welcome-globe">🌍</span>
+      </div>
     </section>
   )
 }

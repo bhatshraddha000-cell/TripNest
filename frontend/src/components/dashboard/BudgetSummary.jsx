@@ -11,15 +11,15 @@ function BudgetSummary({ totalBudget, spent, remaining, progress }) {
       <div className="budget-summary">
         <div>
           <p>Total Budget</p>
-          <strong>${totalBudget}</strong>
+          <strong>₹{totalBudget}</strong>
         </div>
         <div>
           <p>Spent</p>
-          <strong>${spent}</strong>
+          <strong>₹{spent}</strong>
         </div>
         <div>
           <p>Remaining</p>
-          <strong>${remaining}</strong>
+          <strong>₹{remaining}</strong>
         </div>
       </div>
 

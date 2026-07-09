@@ -51,6 +51,8 @@ function LoginPage() {
       footer={
         <p className="field-help">
           Need an account? <Link className="inline-link" to="/register">Create one now</Link>.
+          <br />
+          <Link className="inline-link" to="/forgot-password">Forgot password?</Link>.
         </p>
       }
     >
