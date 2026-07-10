@@ -14,6 +14,8 @@ function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [status, setStatus] = useState({ type: '', message: '' })
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
+  const [resetPasswordStatus, setResetPasswordStatus] = useState({ type: '', message: '' })
   const initials = (fullName || user?.fullName || 'Traveler')
     .split(' ')
     .map((word) => word[0])
@@ -149,6 +151,26 @@ function ProfilePage() {
     }
   }
 
+  async function handleResetPassword() {
+    setResetPasswordLoading(true)
+    setResetPasswordStatus({ type: '', message: '' })
+
+    try {
+      await api.post('/api/auth/forgot-password', {
+        email: user?.email,
+      })
+      setResetPasswordStatus({
+        type: 'success',
+        message: 'Password reset link has been sent to your registered email.',
+      })
+    } catch (error) {
+      const message = error?.response?.data?.message ?? 'Unable to send password reset email right now.'
+      setResetPasswordStatus({ type: 'error', message })
+    } finally {
+      setResetPasswordLoading(false)
+    }
+  }
+
   return (
     <div className="app-shell dashboard-layout">
       <div className="dashboard-shell">
@@ -230,6 +252,26 @@ function ProfilePage() {
                   </form>
 
                 </div>
+              </div>
+
+              <div className="profile-card profile-security">
+                <div className="security-header">
+                  <h3>🔒 Password & Security</h3>
+                  <p>For your account security, password changes are handled through a secure email verification process.</p>
+                </div>
+
+                {resetPasswordStatus.message ? (
+                  <p className={`status-message ${resetPasswordStatus.type}`}>{resetPasswordStatus.message}</p>
+                ) : null}
+
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={resetPasswordLoading}
+                >
+                  {resetPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
               </div>
             </section>
           </main>
