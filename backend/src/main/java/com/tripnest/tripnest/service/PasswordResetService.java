@@ -31,6 +31,7 @@ public class PasswordResetService {
     @Transactional
     public String forgotPassword(String email) {
         String normalizedEmail = normalizeEmail(email);
+        final StringBuilder tokenHolder = new StringBuilder();
 
         userRepository.findByEmail(normalizedEmail).ifPresent(user -> {
             passwordResetTokenRepository.findByUser(user)
@@ -45,9 +46,10 @@ public class PasswordResetService {
 
             passwordResetTokenRepository.save(passwordResetToken);
             emailService.sendPasswordResetEmail(user, token);
+            tokenHolder.append(token);
         });
 
-        return PASSWORD_RESET_SUCCESS_MESSAGE;
+        return tokenHolder.toString();
     }
 
     @Transactional
