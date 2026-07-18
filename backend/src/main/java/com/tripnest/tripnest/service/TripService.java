@@ -126,4 +126,5 @@ public class TripService {
                 .orElseThrow(() -> new TripNotFoundException("Trip not found"));
         tripRepository.delete(trip);
     }
+    
 }

@@ -42,15 +42,9 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, Object>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        String token = passwordResetService.forgotPassword(request.getEmail());
-        if (token != null && !token.isEmpty()) {
-            return ResponseEntity.ok(Map.of(
-                    "message", "If an account with that email exists, a password reset link has been sent.",
-                    "resetLink", "http://localhost:5173/reset-password?token=" + token
-            ));
-        }
+        passwordResetService.forgotPassword(request.getEmail());
         return ResponseEntity.ok(Map.of(
-                "message", "If an account with that email exists, a password reset link has been sent."
+                "message", "If an account with that email exists, a password reset OTP code has been sent."
         ));
     }
 
