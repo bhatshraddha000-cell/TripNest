@@ -7,12 +7,13 @@ import org.springframework.stereotype.Service;
 
 import com.tripnest.tripnest.model.User;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -25,6 +26,11 @@ public class EmailService {
         String subject = "Reset your TripNest password";
         String htmlContent = buildPasswordResetEmail(user.getFullName(), resetLink);
 
+        log.info("=========================================");
+        log.info("PASSWORD RESET LINK GENERATED FOR USER: {}", user.getEmail());
+        log.info("Reset Link: {}", resetLink);
+        log.info("=========================================");
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
@@ -33,8 +39,10 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
             mailSender.send(message);
-        } catch (MessagingException exception) {
-            throw new IllegalStateException("Failed to prepare password reset email", exception);
+            log.info("Password reset email sent successfully to {}", user.getEmail());
+        } catch (Exception exception) {
+            log.warn("Failed to send password reset email to {} via SMTP: {}. Reset link was logged above.",
+                    user.getEmail(), exception.getMessage());
         }
     }
 
