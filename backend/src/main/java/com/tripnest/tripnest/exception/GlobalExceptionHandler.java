@@ -54,13 +54,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(Map.of("message", exception.getMessage()));
     }
 
-    @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex,
-            HttpHeaders headers,
-            HttpStatusCode status,
-            WebRequest request
-    ) {
-        return ResponseEntity.badRequest().body(Map.of("message", "Malformed request body"));
+    @ExceptionHandler(TripNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleTripNotFound(TripNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", exception.getMessage()));
     }
+
+    @ExceptionHandler(TripValidationException.class)
+    public ResponseEntity<Map<String, String>> handleTripValidation(TripValidationException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
+    @Override
+protected ResponseEntity<Object> handleHttpMessageNotReadable(
+        HttpMessageNotReadableException ex,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+) {
+    ex.printStackTrace();
+
+    return ResponseEntity.badRequest().body(
+            Map.of("message", ex.getMostSpecificCause().getMessage())
+    );
+}
 }
