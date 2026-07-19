@@ -15,6 +15,8 @@ import TripDetailsPage from './pages/TripDetailsPage.jsx'
 import ComingSoonPage from './pages/ComingSoonPage.jsx'
 import ItineraryPage from './pages/ItirneraryPage.jsx'
 import ActivitySchedulerPage from './pages/ActivitySchedulerPage.jsx'
+import DestinationsPage from './pages/DestinationsPage.jsx'
+import DestinationDetailsPage from './pages/DestinationDetailsPage.jsx'
 import './App.css'
 
 function App() {
@@ -118,7 +120,15 @@ function App() {
         path="/destinations"
         element={
           <ProtectedRoute>
-            <ComingSoonPage title="Destinations Guide" />
+            <DestinationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/destinations/:id"
+        element={
+          <ProtectedRoute>
+            <DestinationDetailsPage />
           </ProtectedRoute>
         }
       />
