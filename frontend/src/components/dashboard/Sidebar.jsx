@@ -4,6 +4,8 @@ const menuItems = [
   { label: 'Home', path: '/' },
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'My Trips', path: '/trips' },
+  { label: 'Itinerary', path: '/itinerary' },
+  { label: 'Activity Scheduling', path: '/activity-scheduler' },
   { label: 'Destinations', path: '/destinations' },
   { label: 'Bookings', path: '/bookings' },
   { label: 'Profile', path: '/profile' },
@@ -18,7 +20,9 @@ function Sidebar() {
       <div className="sidebar-title">Planner</div>
       <nav className="sidebar-nav" aria-label="Dashboard navigation">
         {menuItems.map((item) => {
-          const isExactMatch = location.pathname === item.path
+          const isExactMatch = ['/itinerary', '/activity-scheduler'].includes(item.path)
+            ? location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+            : location.pathname === item.path
 
           return (
             <Link

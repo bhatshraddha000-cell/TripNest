@@ -22,6 +22,7 @@ function CreateTripPage() {
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const [generalError, setGeneralError] = useState('')
+  const [createdTrip, setCreatedTrip] = useState(null)
 
   if (!authLoading && !isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -75,8 +76,8 @@ function CreateTripPage() {
         ...formData,
         budget: parseFloat(formData.budget)
       }
-      await tripApi.createTrip(payload)
-      navigate('/trips')
+      const trip = await tripApi.createTrip(payload)
+      setCreatedTrip(trip)
     } catch (err) {
       const responseData = err?.response?.data
       if (responseData?.errors && typeof responseData.errors === 'object') {
@@ -115,7 +116,16 @@ function CreateTripPage() {
                 </div>
               )}
 
-              <form className="auth-form" onSubmit={handleSubmit} style={{ gap: '20px' }}>
+              {createdTrip ? (
+                <div style={{ textAlign: 'center', padding: '28px 12px' }}>
+                  <h3 style={{ marginBottom: '8px' }}>Trip created successfully!</h3>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Your escape is ready for its day-by-day plan.</p>
+                  <div className="profile-actions" style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <button className="primary-button" onClick={() => navigate(`/itinerary/${createdTrip.id}`)}>Create Itinerary</button>
+                    <Link to="/trips" className="secondary-button" style={{ textDecoration: 'none' }}>Back to My Trips</Link>
+                  </div>
+                </div>
+              ) : <form className="auth-form" onSubmit={handleSubmit} style={{ gap: '20px' }}>
                 <div className="field-group">
                   <label htmlFor="title">Trip Title</label>
                   <input
@@ -237,7 +247,7 @@ function CreateTripPage() {
                     Cancel
                   </Link>
                 </div>
-              </form>
+              </form>}
             </section>
           </main>
         </div>

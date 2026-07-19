@@ -13,6 +13,8 @@ import CreateTripPage from './pages/CreateTripPage.jsx'
 import EditTripPage from './pages/EditTripPage.jsx'
 import TripDetailsPage from './pages/TripDetailsPage.jsx'
 import ComingSoonPage from './pages/ComingSoonPage.jsx'
+import ItineraryPage from './pages/ItirneraryPage.jsx'
+import ActivitySchedulerPage from './pages/ActivitySchedulerPage.jsx'
 import './App.css'
 
 function App() {
@@ -69,6 +71,38 @@ function App() {
         element={
           <ProtectedRoute>
             <EditTripPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/itinerary/:tripId"
+        element={
+          <ProtectedRoute>
+            <ItineraryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/itinerary"
+        element={
+          <ProtectedRoute>
+            <ItineraryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity-scheduler/:itineraryId"
+        element={
+          <ProtectedRoute>
+            <ActivitySchedulerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity-scheduler"
+        element={
+          <ProtectedRoute>
+            <ActivitySchedulerPage />
           </ProtectedRoute>
         }
       />

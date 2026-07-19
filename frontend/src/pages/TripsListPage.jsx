@@ -109,7 +109,8 @@ function TripsListPage() {
                         transition: 'transform 0.2s, box-shadow 0.2s',
                         borderRadius: '16px',
                         border: '1px solid rgba(255, 255, 255, 0.05)',
-                        backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.03))'
+                        backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
+                        position: 'relative'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-3px)'
@@ -187,6 +188,13 @@ function TripsListPage() {
                           textIndent: '-9999px'
                         }}>
                           View Details
+                        </Link>
+                        <Link
+                          to={`/itinerary/${trip.id}`}
+                          className="primary-button"
+                          style={{ position: 'relative', zIndex: 2, marginTop: '16px', textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: '0.88rem' }}
+                        >
+                          Manage Itinerary
                         </Link>
                       </div>
                     )
