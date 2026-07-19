@@ -1,15 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const menuItems = [
+  { label: 'Home', path: '/' },
   { label: 'Dashboard', path: '/dashboard' },
-  { label: 'My Trips', path: '/my-trips' },
-  { label: 'Itinerary', path: '/itinerary' },
-  { label: 'Budget', path: '/budget' },
-  { label: 'Expenses', path: '/expenses' },
-  { label: 'Groups', path: '/groups' },
+  { label: 'My Trips', path: '/trips' },
   { label: 'Destinations', path: '/destinations' },
-  { label: 'Saved Places', path: '/saved' },
-  { label: 'Notifications', path: '/notifications' },
+  { label: 'Bookings', path: '/bookings' },
   { label: 'Profile', path: '/profile' },
   { label: 'Settings', path: '/settings' },
 ]
@@ -22,10 +18,7 @@ function Sidebar() {
       <div className="sidebar-title">Planner</div>
       <nav className="sidebar-nav" aria-label="Dashboard navigation">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path
-          const isDashboardActive = item.path === '/dashboard' && location.pathname === '/dashboard'
-          const isProfileActive = item.path === '/profile' && location.pathname === '/profile'
-          const isExactMatch = isActive || isDashboardActive || isProfileActive
+          const isExactMatch = location.pathname === item.path
 
           return (
             <Link

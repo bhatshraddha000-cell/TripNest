@@ -1,6 +1,8 @@
+import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext.jsx'
 
 function Navbar({ userName, userEmail, onLogout }) {
+  const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const initials = (userName || 'Traveler')
     .split(' ')
@@ -11,13 +13,13 @@ function Navbar({ userName, userEmail, onLogout }) {
 
   return (
     <header className="dashboard-navbar">
-      <div className="navbar-brand">
+      <Link to="/" className="navbar-brand" style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="brand-mark">✈</div>
         <div>
           <strong>TripNest</strong>
           <span>Travel planning made simple</span>
         </div>
-      </div>
+      </Link>
 
       <label className="search-box" htmlFor="dashboard-search">
         <span>🔎</span>
@@ -25,6 +27,16 @@ function Navbar({ userName, userEmail, onLogout }) {
       </label>
 
       <div className="navbar-actions">
+        <button
+          className="secondary-button home-button"
+          type="button"
+          onClick={() => navigate('/')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <span>🏠</span>
+          <span>Home</span>
+        </button>
+
         <button className="icon-button" type="button" aria-label="Toggle theme" onClick={toggleTheme}>
           {theme === 'light' ? '🌙' : '☀️'}
         </button>

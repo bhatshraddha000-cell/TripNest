@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import Navbar from '../components/dashboard/Navbar.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { api } from '../lib/api.js'
 
 function ProfilePage() {
+  const navigate = useNavigate()
   const { user, logout, authLoading, isAuthenticated, loadCurrentUser, updateUser } = useAuth()
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [previewAvatar, setPreviewAvatar] = useState('')
@@ -16,6 +17,7 @@ function ProfilePage() {
   const [status, setStatus] = useState({ type: '', message: '' })
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
   const [resetPasswordStatus, setResetPasswordStatus] = useState({ type: '', message: '' })
+
   const initials = (fullName || user?.fullName || 'Traveler')
     .split(' ')
     .map((word) => word[0])
@@ -101,8 +103,21 @@ function ProfilePage() {
     setStatus({ type: '', message: '' })
   }
 
+  function handleRemoveAvatar() {
+    if (previewAvatar?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewAvatar)
+    }
+    setPreviewAvatar('')
+    setSelectedFile(null)
+    setIsEditing(true)
+    setStatus({ type: '', message: '' })
+  }
+
   function resetProfileForm() {
     setFullName(user?.fullName ?? '')
+    if (previewAvatar?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewAvatar)
+    }
     setPreviewAvatar('')
     setSelectedFile(null)
     setIsEditing(false)
@@ -140,7 +155,7 @@ function ProfilePage() {
       if (selectedFile) {
         setStatus({
           type: 'success',
-          message: 'Profile image preview updated locally. The backend does not expose a profile-image upload endpoint yet.',
+          message: 'Profile image preview updated locally.',
         })
       }
     } catch (error) {
@@ -159,14 +174,10 @@ function ProfilePage() {
       await api.post('/api/auth/forgot-password', {
         email: user?.email,
       })
-      setResetPasswordStatus({
-        type: 'success',
-        message: 'Password reset link has been sent to your registered email.',
-      })
+      navigate(`/reset-password?email=${encodeURIComponent(user?.email ?? '')}`)
     } catch (error) {
-      const message = error?.response?.data?.message ?? 'Unable to send password reset email right now.'
+      const message = error?.response?.data?.message ?? 'Unable to send password reset OTP code right now.'
       setResetPasswordStatus({ type: 'error', message })
-    } finally {
       setResetPasswordLoading(false)
     }
   }
@@ -199,10 +210,24 @@ function ProfilePage() {
                         <span>{initials || 'TN'}</span>
                       )}
                     </div>
-                    <label className="secondary-button profile-upload" htmlFor="avatar-upload">
-                      Upload Photo
-                    </label>
-                    <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} />
+
+                    {!previewAvatar ? (
+                      <label className="secondary-button profile-upload" htmlFor="avatar-upload">
+                        Upload Photo
+                      </label>
+                    ) : (
+                      <button className="secondary-button profile-upload" type="button" onClick={handleRemoveAvatar}>
+                        Remove Photo
+                      </button>
+                    )}
+
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      style={{ display: 'none' }}
+                    />
                   </div>
 
                   <div className="profile-metrics">
@@ -250,28 +275,29 @@ function ProfilePage() {
                       </button>
                     </div>
                   </form>
-
                 </div>
               </div>
 
               <div className="profile-card profile-security">
                 <div className="security-header">
                   <h3>🔒 Password & Security</h3>
-                  <p>For your account security, password changes are handled through a secure email verification process.</p>
+                  <p>Send an OTP code to your registered email address to reset your password.</p>
                 </div>
 
                 {resetPasswordStatus.message ? (
                   <p className={`status-message ${resetPasswordStatus.type}`}>{resetPasswordStatus.message}</p>
                 ) : null}
 
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={handleResetPassword}
-                  disabled={resetPasswordLoading}
-                >
-                  {resetPasswordLoading ? 'Sending...' : 'Send Reset Link'}
-                </button>
+                <div className="security-actions">
+                  <button
+                    className="primary-button security-btn"
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={resetPasswordLoading}
+                  >
+                    {resetPasswordLoading ? 'Sending OTP...' : 'Change Password'}
+                  </button>
+                </div>
               </div>
             </section>
           </main>

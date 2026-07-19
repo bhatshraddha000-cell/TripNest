@@ -5,17 +5,23 @@ const AuthContext = createContext(null)
 
 function normalizeError(error, fallbackMessage) {
   const responseData = error?.response?.data
+  const message = responseData?.message ?? error?.message ?? fallbackMessage
 
   if (responseData?.errors && typeof responseData.errors === 'object') {
     return {
-      message: responseData.message ?? fallbackMessage,
+      message,
       fieldErrors: responseData.errors,
     }
   }
 
+  const fieldErrors = {}
+  if (error?.response?.status === 409 || message.toLowerCase().includes('already registered')) {
+    fieldErrors.email = 'This email address is already registered. Please sign in instead.'
+  }
+
   return {
-    message: responseData?.message ?? fallbackMessage,
-    fieldErrors: {},
+    message: fieldErrors.email ? 'This email address is already registered.' : message,
+    fieldErrors,
   }
 }
 
