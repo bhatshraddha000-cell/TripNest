@@ -76,6 +76,11 @@ public class JwtService {
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
+        if (claims.getIssuedAt() != null && claims.getExpiration() != null) {
+            System.out.println("JWT Issued at: " + claims.getIssuedAt());
+            System.out.println("JWT Expires at: " + claims.getExpiration());
+            System.out.println("Current server time: " + new Date());
+        }
         return claimsResolver.apply(claims);
     }
 
@@ -88,10 +93,12 @@ public class JwtService {
                     .getPayload();
         } catch (ExpiredJwtException exception) {
             throw new IllegalArgumentException("JWT token has expired");
-        } catch (MalformedJwtException | SecurityException exception) {
-            throw new IllegalArgumentException("Invalid JWT token");
-        } catch (JwtException exception) {
+        } catch (MalformedJwtException exception) {
             throw new IllegalArgumentException("Malformed JWT token");
+        } catch (SecurityException exception) {
+            throw new IllegalArgumentException("Invalid JWT signature");
+        } catch (JwtException exception) {
+            throw new IllegalArgumentException("Invalid JWT token");
         }
     }
 }

@@ -1,0 +1,94 @@
+.attraction-hero {
+  min-height: 40vh;
+}
+
+.hero-category {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  text-transform: capitalize;
+  margin-top: 10px;
+  background: rgba(255,255,255,0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.truncate-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.visitor-info-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.info-icon {
+  font-size: 2rem;
+  background: rgba(var(--primary-color-rgb), 0.1);
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.info-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.info-card p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.leaflet-map-wrapper {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-actions {
+  padding: 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.google-maps-btn {
+  display: inline-block;
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.google-maps-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Ensure map controls don't look weird in dark mode if applicable */
+.leaflet-control-zoom a {
+  color: #333 !important;
+}
