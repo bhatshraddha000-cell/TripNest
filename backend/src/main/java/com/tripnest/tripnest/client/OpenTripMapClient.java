@@ -283,11 +283,28 @@ public class OpenTripMapClient {
             if (response.containsKey("preview")) {
                 Map<String, Object> preview = (Map<String, Object>) response.get("preview");
                 if (preview.containsKey("source")) {
-                    details.setHeroImage(preview.get("source").toString());
+                    String previewSource = preview.get("source").toString();
+                    details.setPreview(previewSource);
+                    details.setHeroImage(previewSource); // default for backward compat
                 }
-            } else if (response.get("image") != null) {
-                details.setHeroImage(response.get("image").toString());
             }
+            if (response.get("image") != null) {
+                String otmImage = response.get("image").toString();
+                details.setImage(otmImage);
+                if (details.getHeroImage() == null) {
+                    details.setHeroImage(otmImage);
+                }
+            }
+
+            // Fetch Wikipedia data to get additional fallback images
+            if (details.getName() != null) {
+                WikipediaClient.WikiData wiki = wikipediaClient.getWikiData(details.getName());
+                if (wiki != null) {
+                    details.setThumbnail(wiki.thumbnail);
+                    details.setOriginalImage(wiki.originalImage);
+                }
+            }
+            details.setFallbackImage("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000&auto=format&fit=crop");
 
             if (response.containsKey("point")) {
                 Map<String, Object> point = (Map<String, Object>) response.get("point");

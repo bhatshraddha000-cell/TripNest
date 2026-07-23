@@ -47,19 +47,28 @@ public class WikipediaClient {
                     extract = response.get("extract").toString();
                 }
 
+                String thumbnail = null;
+                String originalImage = null;
+
                 if (response.containsKey("thumbnail")) {
                     Map<String, Object> thumb = (Map<String, Object>) response.get("thumbnail");
                     if (thumb.containsKey("source")) {
-                        image = thumb.get("source").toString();
+                        thumbnail = thumb.get("source").toString();
+                        image = thumbnail; // keep original logic for image
                     }
-                } else if (response.containsKey("originalimage")) {
+                }
+                
+                if (response.containsKey("originalimage")) {
                     Map<String, Object> orig = (Map<String, Object>) response.get("originalimage");
                     if (orig.containsKey("source")) {
-                        image = orig.get("source").toString();
+                        originalImage = orig.get("source").toString();
+                        if (image == null) {
+                            image = originalImage;
+                        }
                     }
                 }
 
-                return new WikiData(extract, image);
+                return new WikiData(extract, image, thumbnail, originalImage);
             }
         } catch (Exception e) {
             System.err.println("Error fetching wikipedia info for " + title + ": " + e.getMessage());
@@ -70,10 +79,19 @@ public class WikipediaClient {
     public static class WikiData {
         public String extract;
         public String image;
+        public String thumbnail;
+        public String originalImage;
         
         public WikiData(String extract, String image) {
             this.extract = extract;
             this.image = image;
+        }
+
+        public WikiData(String extract, String image, String thumbnail, String originalImage) {
+            this.extract = extract;
+            this.image = image;
+            this.thumbnail = thumbnail;
+            this.originalImage = originalImage;
         }
     }
 }

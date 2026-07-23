@@ -25,6 +25,11 @@ public class AttractionDetailsResponse {
     private Double latitude;
     private Double longitude;
     private String heroImage;
+    private String image;
+    private String preview;
+    private String thumbnail;
+    private String originalImage;
+    private String fallbackImage;
     private List<String> gallery;
     private List<String> nearbyAttractions;
     private List<String> travelTips;

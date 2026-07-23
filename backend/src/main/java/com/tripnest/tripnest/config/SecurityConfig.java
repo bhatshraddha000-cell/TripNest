@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Destination APIs - Public Read Access
                         .requestMatchers(HttpMethod.GET, "/api/destinations/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
 
                         // Destination APIs - Admin Only Write Access
                         .requestMatchers(HttpMethod.POST, "/api/destinations/**").hasRole("ADMIN")

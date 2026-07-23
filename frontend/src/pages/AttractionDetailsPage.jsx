@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import './AttractionDetailsPage.css'
 import { api } from '../lib/api.js'
+import { ArrowLeft } from 'lucide-react'
 
 // Fix for default leaflet marker icon not showing correctly in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -23,6 +24,7 @@ function AttractionDetailsPage() {
   const [attraction, setAttraction] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const loadDetails = useCallback(async () => {
     if (!xid) {
@@ -86,8 +88,23 @@ function AttractionDetailsPage() {
     </div>
   );
 
-  const defaultImage = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop';
-  const heroImg = attraction.heroImage || defaultImage;
+  const getAvailableImages = (attr) => {
+    if (!attr) return [];
+    const images = [];
+    if (attr.preview) images.push(attr.preview);
+    if (attr.image) images.push(attr.image);
+    if (attr.thumbnail) images.push(attr.thumbnail);
+    if (attr.originalImage) images.push(attr.originalImage);
+    if (attr.heroImage && !images.includes(attr.heroImage)) images.push(attr.heroImage);
+    if (attr.fallbackImage) images.push(attr.fallbackImage);
+    images.push('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop');
+    return [...new Set(images)].filter(Boolean);
+  };
+
+  const availableImages = getAvailableImages(attraction);
+  const rawHeroImg = availableImages[currentImageIndex] || availableImages[0];
+  const baseURL = api.defaults.baseURL || 'http://localhost:8081';
+  const heroImg = rawHeroImg ? `${baseURL}/api/images/proxy?url=${encodeURIComponent(rawHeroImg)}` : 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop';
 
   return (
     <div className="app-shell dashboard-layout premium-details-layout">
@@ -97,11 +114,23 @@ function AttractionDetailsPage() {
           <Sidebar />
           <main className="dashboard-main details-main p-0">
             {/* HERO SECTION */}
-            <section className="hero-section attraction-hero">
-              <img src={heroImg} alt={attraction.name} className="hero-img" />
+            <section className="hero-section attraction-hero" style={{ position: 'relative' }}>
+              <img 
+                src={heroImg} 
+                alt={attraction.name} 
+                className="hero-img" 
+                onError={() => {
+                  if (currentImageIndex < availableImages.length - 1) {
+                    setCurrentImageIndex(prev => prev + 1);
+                  }
+                }}
+              />
               <div className="hero-overlay"></div>
               <div className="hero-content fade-in">
-                <button onClick={() => window.history.back()} className="back-link">← Back</button>
+                <button onClick={() => window.history.back()} className="premium-back-button">
+                  <ArrowLeft size={18} className="back-icon" />
+                  <span>Back</span>
+                </button>
                 <h1>{attraction.name}</h1>
                 {attraction.category && <p className="hero-category">{attraction.category.replace(/_/g, ' ')}</p>}
               </div>
