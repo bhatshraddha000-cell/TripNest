@@ -2,7 +2,7 @@ package com.tripnest.tripnest.exception;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -59,6 +59,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", exception.getMessage()));
     }
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleEntityNotFound(EntityNotFoundException exception) {
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+               .body(Map.of("message", exception.getMessage()));
+}
 
     @ExceptionHandler(TripValidationException.class)
     public ResponseEntity<Map<String, String>> handleTripValidation(TripValidationException exception) {

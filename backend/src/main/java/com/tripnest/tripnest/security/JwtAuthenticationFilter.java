@@ -18,6 +18,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected void doFilterInternal(
@@ -33,19 +36,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        
+        logger.debug("JwtAuthenticationFilter: Request URI: {}", request.getRequestURI());
+        logger.debug("JwtAuthenticationFilter: Authorization header: {}", authHeader);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.debug("JwtAuthenticationFilter: No Bearer token found in header.");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             String token = authHeader.substring(7);
+            logger.debug("JwtAuthenticationFilter: Extracted token: {}", token);
+            
             String username = jwtService.extractUsername(token);
+            logger.debug("JwtAuthenticationFilter: Extracted username: {}", username);
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                boolean isTokenValid = jwtService.isTokenValid(token, userDetails);
+                
+                logger.debug("JwtAuthenticationFilter: Token validation result for user {}: {}", username, isTokenValid);
 
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (isTokenValid) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
@@ -56,9 +70,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (IllegalArgumentException exception) {
+            logger.error("JwtAuthenticationFilter: JWT Validation Exception: ", exception);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.getWriter().write("{\"message\":\"" + exception.getMessage() + "\"}");
+            return;
+        } catch (Exception exception) {
+            logger.error("JwtAuthenticationFilter: Unexpected Exception: ", exception);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write("{\"message\":\"Invalid JWT token\"}");
             return;
         }
 

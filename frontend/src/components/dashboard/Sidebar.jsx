@@ -20,9 +20,9 @@ function Sidebar() {
       <div className="sidebar-title">Planner</div>
       <nav className="sidebar-nav" aria-label="Dashboard navigation">
         {menuItems.map((item) => {
-          const isExactMatch = ['/itinerary', '/activity-scheduler'].includes(item.path)
-            ? location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
-            : location.pathname === item.path
+          const isExactMatch = item.path === '/'
+            ? location.pathname === item.path
+            : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
 
           return (
             <Link

@@ -15,6 +15,10 @@ import TripDetailsPage from './pages/TripDetailsPage.jsx'
 import ComingSoonPage from './pages/ComingSoonPage.jsx'
 import ItineraryPage from './pages/ItirneraryPage.jsx'
 import ActivitySchedulerPage from './pages/ActivitySchedulerPage.jsx'
+import DestinationsPage from './pages/DestinationsPage.jsx'
+import DestinationDetailsPage from './pages/DestinationDetailsPage.jsx'
+import AttractionDetailsPage from './pages/AttractionDetailsPage.jsx'
+import PublicDestinationDetailsPage from './pages/PublicDestinationDetailsPage.jsx'
 import './App.css'
 
 function App() {
@@ -106,6 +110,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/explore/:destinationName" element={<PublicDestinationDetailsPage />} />
       <Route
         path="/explore"
         element={
@@ -118,7 +123,23 @@ function App() {
         path="/destinations"
         element={
           <ProtectedRoute>
-            <ComingSoonPage title="Destinations Guide" />
+            <DestinationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/destinations/:tripId"
+        element={
+          <ProtectedRoute>
+            <DestinationDetailsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/attraction/:xid"
+        element={
+          <ProtectedRoute>
+            <AttractionDetailsPage />
           </ProtectedRoute>
         }
       />

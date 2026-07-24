@@ -14,5 +14,7 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
 
     List<Trip> findByUser(User user);
 
+    List<Trip> findByUserAndStartDateGreaterThanEqual(User user, java.time.LocalDate date);
+
     Optional<Trip> findByIdAndUser(Long id, User user);
 }
