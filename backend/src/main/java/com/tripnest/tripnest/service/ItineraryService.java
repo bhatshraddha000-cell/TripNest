@@ -31,6 +31,7 @@ public class ItineraryService {
     private final ItineraryRepository itineraryRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -119,6 +120,7 @@ public class ItineraryService {
                 .build();
 
         Itinerary saved = itineraryRepository.save(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", saved.getId(), "CREATED", "Itinerary Created", "Created itinerary \"" + saved.getTitle() + "\"");
         return mapItineraryToResponse(saved);
     }
 
@@ -170,6 +172,7 @@ public class ItineraryService {
         itinerary.setNotes(request.getNotes());
 
         Itinerary saved = itineraryRepository.save(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", saved.getId(), "UPDATED", "Itinerary Updated", "Updated itinerary \"" + saved.getTitle() + "\"");
         return mapItineraryToResponse(saved);
     }
 
@@ -181,6 +184,9 @@ public class ItineraryService {
         Itinerary itinerary = itineraryRepository.findByIdAndTripId(itineraryId, tripId)
                 .orElseThrow(() -> new TripNotFoundException("Itinerary not found"));
 
+        String title = itinerary.getTitle();
+        Long id = itinerary.getId();
         itineraryRepository.delete(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", id, "DELETED", "Itinerary Deleted", "Deleted itinerary \"" + title + "\"");
     }
 }

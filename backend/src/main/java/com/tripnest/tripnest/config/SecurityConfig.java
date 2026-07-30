@@ -58,6 +58,7 @@ public class SecurityConfig {
                         // Destination APIs - Public Read Access
                         .requestMatchers(HttpMethod.GET, "/api/destinations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/uploads/profiles/**").permitAll()
 
                         // Destination APIs - Admin Only Write Access
                         .requestMatchers(HttpMethod.POST, "/api/destinations/**").hasRole("ADMIN")

@@ -1,8 +1,6 @@
 package com.tripnest.tripnest.dto;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,15 +12,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserProfileResponse {
+public class UpdateProfileRequest {
 
-    private Long userId;
-    private String name;
+    @NotBlank(message = "Full name cannot be blank")
     private String fullName;
-    private String email;
+
     private String profileImage;
-    private String role;
-    private Set<String> roles;
-    private LocalDateTime createdAt;
-    private String memberSince;
 }

@@ -27,6 +27,7 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -72,12 +73,13 @@ public class TripService {
                 .endDate(request.getEndDate())
                 .travelers(request.getTravelers())
                 .budget(request.getBudget())
-                .status(TripStatus.PLANNING)
+                .status(request.getStatus() != null ? request.getStatus() : TripStatus.PLANNING)
                 .description(request.getDescription())
                 .user(user)
                 .build();
 
         Trip saved = tripRepository.save(trip);
+        activityLogService.logActivity(user, "TRIP", saved.getId(), "CREATED", "Trip Created", "Created trip \"" + saved.getTitle() + "\"");
         return mapToResponse(saved);
     }
 
@@ -116,6 +118,7 @@ public class TripService {
         trip.setDescription(request.getDescription());
 
         Trip saved = tripRepository.save(trip);
+        activityLogService.logActivity(user, "TRIP", saved.getId(), "UPDATED", "Trip Updated", "Updated trip \"" + saved.getTitle() + "\"");
         return mapToResponse(saved);
     }
 
@@ -124,7 +127,10 @@ public class TripService {
         User user = getAuthenticatedUser();
         Trip trip = tripRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+        String tripTitle = trip.getTitle();
+        Long tripId = trip.getId();
         tripRepository.delete(trip);
+        activityLogService.logActivity(user, "TRIP", tripId, "DELETED", "Trip Deleted", "Deleted trip \"" + tripTitle + "\"");
     }
     
 }

@@ -1,7 +1,6 @@
 package com.tripnest.tripnest.dto;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,15 +13,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserProfileResponse {
+public class ActivityLogResponse {
 
-    private Long userId;
-    private String name;
-    private String fullName;
-    private String email;
-    private String profileImage;
-    private String role;
-    private Set<String> roles;
+    private Long id;
+    private String entityType;
+    private Long entityId;
+    private String action;
+    private String title;
+    private String description;
     private LocalDateTime createdAt;
-    private String memberSince;
 }

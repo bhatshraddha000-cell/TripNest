@@ -32,6 +32,7 @@ public class ActivityService {
     private final ItineraryRepository itineraryRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -95,6 +96,7 @@ public class ActivityService {
                 .build();
 
         Activity saved = activityRepository.save(activity);
+        activityLogService.logActivity(user, "ACTIVITY", saved.getId(), "CREATED", "Activity Created", "Created activity \"" + saved.getTitle() + "\"");
         return mapToResponse(saved);
     }
 
@@ -140,6 +142,7 @@ public class ActivityService {
         activity.setNotes(request.getNotes());
 
         Activity saved = activityRepository.save(activity);
+        activityLogService.logActivity(user, "ACTIVITY", saved.getId(), "UPDATED", "Activity Updated", "Updated activity \"" + saved.getTitle() + "\"");
         return mapToResponse(saved);
     }
 
@@ -151,6 +154,9 @@ public class ActivityService {
         Activity activity = activityRepository.findByIdAndItineraryId(activityId, itineraryId)
                 .orElseThrow(() -> new TripNotFoundException("Activity not found"));
 
+        String title = activity.getTitle();
+        Long id = activity.getId();
         activityRepository.delete(activity);
+        activityLogService.logActivity(user, "ACTIVITY", id, "DELETED", "Activity Deleted", "Deleted activity \"" + title + "\"");
     }
 }
