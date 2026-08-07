@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { activityApi } from '../../lib/activityApi.js'
 
 const activityTypes = [
@@ -113,7 +114,18 @@ function ActivitySchedulePanel({ tripId, itineraryId }) {
           {(activity.startTime || activity.endTime) && <p className="activity-meta">{formatTime(activity.startTime)}{activity.endTime ? ` – ${formatTime(activity.endTime)}` : ''}</p>}
           {activity.description && <p className="activity-description">{activity.description}</p>}
           {activity.notes && <p className="activity-notes">Notes: {activity.notes}</p>}
-          <div className="activity-actions"><button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button><button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button></div>
+          <div className="activity-actions">
+            <button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button>
+            <button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button>
+            <Link 
+              to={`/trips/${tripId}?tab=expenses&activityId=${activity.id}&amount=${activity.estimatedCost}&title=${encodeURIComponent(activity.title)}`} 
+              className="secondary-button compact-button" 
+              style={{ textDecoration: 'none', color: '#2f7aa3', borderColor: '#2f7aa3' }}
+            >
+              Add Actual Expense
+            </Link>
+          </div>
+
         </div>
       </article>)}
     </div>}

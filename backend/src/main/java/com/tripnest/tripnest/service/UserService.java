@@ -106,4 +106,16 @@ public class UserService {
         User saved = userRepository.save(user);
         return mapToProfileResponse(saved);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<UserProfileResponse> searchUsers(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return java.util.List.of();
+        }
+        String q = query.trim();
+        return userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(q, q).stream()
+                .map(this::mapToProfileResponse)
+                .toList();
+    }
 }
+

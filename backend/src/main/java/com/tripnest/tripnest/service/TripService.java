@@ -19,7 +19,15 @@ import com.tripnest.tripnest.model.User;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 
+import com.tripnest.tripnest.model.TripMember;
+import com.tripnest.tripnest.model.TripMemberRole;
+import com.tripnest.tripnest.repository.TripMemberRepository;
+import com.tripnest.tripnest.repository.TripInvitationRepository;
+import com.tripnest.tripnest.repository.ExpenseRepository;
+import com.tripnest.tripnest.repository.DocumentRepository;
+
 import lombok.RequiredArgsConstructor;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +36,11 @@ public class TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
+    private final TripMemberRepository tripMemberRepository;
+    private final TripInvitationRepository tripInvitationRepository;
+    private final ExpenseRepository expenseRepository;
+    private final DocumentRepository documentRepository;
+
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -79,33 +92,90 @@ public class TripService {
                 .build();
 
         Trip saved = tripRepository.save(trip);
+        
+        // Auto-create GROUP_ADMIN trip member record
+        TripMember adminMember = TripMember.builder()
+                .trip(saved)
+                .user(user)
+                .tripRole(TripMemberRole.GROUP_ADMIN)
+                .build();
+        tripMemberRepository.save(adminMember);
+
         activityLogService.logActivity(user, "TRIP", saved.getId(), "CREATED", "Trip Created", "Created trip \"" + saved.getTitle() + "\"");
-        return mapToResponse(saved);
+        
+        TripResponse resp = mapToResponse(saved);
+        resp.setTripRole("GROUP_ADMIN");
+        return resp;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TripResponse> getAllTrips() {
         User user = getAuthenticatedUser();
-        List<Trip> trips = tripRepository.findByUser(user);
-        return trips.stream()
-                .map(this::mapToResponse)
+        
+        // Legacy migration: find trips where user is owner, but no TripMember record exists
+        List<Trip> ownedTrips = tripRepository.findByUser(user);
+        for (Trip trip : ownedTrips) {
+            if (tripMemberRepository.findByTripIdAndUserId(trip.getId(), user.getId()).isEmpty()) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                tripMemberRepository.save(member);
+            }
+        }
+
+        List<TripMember> memberships = tripMemberRepository.findByUser(user);
+        return memberships.stream()
+                .map(membership -> {
+                    TripResponse resp = mapToResponse(membership.getTrip());
+                    resp.setTripRole(membership.getTripRole().name());
+                    return resp;
+                })
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TripResponse getTripById(Long id) {
         User user = getAuthenticatedUser();
-        Trip trip = tripRepository.findByIdAndUser(id, user)
-                .orElseThrow(() -> new TripNotFoundException("Trip not found"));
-        return mapToResponse(trip);
+        
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(id, user.getId());
+        if (membershipOpt.isEmpty()) {
+            // Legacy migration check: if they are the owner, make them group admin
+            Trip trip = tripRepository.findById(id)
+                    .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+            if (trip.getUser().getId().equals(user.getId())) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                TripMember savedMember = tripMemberRepository.save(member);
+                TripResponse resp = mapToResponse(trip);
+                resp.setTripRole(savedMember.getTripRole().name());
+                return resp;
+            } else {
+                throw new TripNotFoundException("Trip not found or access denied");
+            }
+        }
+        
+        TripMember membership = membershipOpt.get();
+        TripResponse resp = mapToResponse(membership.getTrip());
+        resp.setTripRole(membership.getTripRole().name());
+        return resp;
     }
 
     @Transactional
     public TripResponse updateTrip(Long id, UpdateTripRequest request) {
         User user = getAuthenticatedUser();
-        Trip trip = tripRepository.findByIdAndUser(id, user)
+        TripMember membership = tripMemberRepository.findByTripIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new TripNotFoundException("Trip not found"));
 
+        if (membership.getTripRole() != TripMemberRole.GROUP_ADMIN) {
+            throw new IllegalArgumentException("Only Group Admin can edit the trip");
+        }
+
+        Trip trip = membership.getTrip();
         validateDates(request.getStartDate(), request.getEndDate());
 
         trip.setTitle(request.getTitle());
@@ -119,16 +189,32 @@ public class TripService {
 
         Trip saved = tripRepository.save(trip);
         activityLogService.logActivity(user, "TRIP", saved.getId(), "UPDATED", "Trip Updated", "Updated trip \"" + saved.getTitle() + "\"");
-        return mapToResponse(saved);
+        
+        TripResponse resp = mapToResponse(saved);
+        resp.setTripRole(membership.getTripRole().name());
+        return resp;
     }
 
     @Transactional
     public void deleteTrip(Long id) {
         User user = getAuthenticatedUser();
-        Trip trip = tripRepository.findByIdAndUser(id, user)
+        TripMember membership = tripMemberRepository.findByTripIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+
+        if (membership.getTripRole() != TripMemberRole.GROUP_ADMIN) {
+            throw new IllegalArgumentException("Only Group Admin can delete the trip");
+        }
+
+        Trip trip = membership.getTrip();
         String tripTitle = trip.getTitle();
         Long tripId = trip.getId();
+
+        // Clean up new associations before deletion
+        tripMemberRepository.deleteByTripId(tripId);
+        tripInvitationRepository.deleteByTripId(tripId);
+        expenseRepository.deleteByTripId(tripId);
+        documentRepository.deleteByTripId(tripId);
+
         tripRepository.delete(trip);
         activityLogService.logActivity(user, "TRIP", tripId, "DELETED", "Trip Deleted", "Deleted trip \"" + tripTitle + "\"");
     }

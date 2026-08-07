@@ -30,4 +30,10 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateCurrentUser(@Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(userService.updateUserProfile(request));
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<java.util.List<UserProfileResponse>> searchUsers(@org.springframework.web.bind.annotation.RequestParam("query") String query) {
+        return ResponseEntity.ok(userService.searchUsers(query));
+    }
 }
+
