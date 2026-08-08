@@ -69,8 +69,17 @@ function DestinationsPage() {
                   {destinations.map((dest, i) => (
                     <article className="destination-card glass-card fade-in" key={dest.tripId || i} style={{animationDelay: `${i * 0.1}s`}}>
                       <div className="card-image-wrapper">
-                        {dest.imageUrl && <img src={dest.imageUrl} alt={dest.destination} loading="lazy" />}
-                        <div className="card-overlay"></div>
+                        <span style={{ position: 'absolute', fontSize: '3rem', opacity: 0.15, zIndex: 1 }}>🗺️</span>
+                        {dest.imageUrl && (
+                          <img 
+                            src={dest.imageUrl} 
+                            alt={dest.destination} 
+                            loading="lazy" 
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                            style={{ zIndex: 2 }}
+                          />
+                        )}
+                        <div className="card-overlay" style={{ zIndex: 3 }}></div>
                       </div>
                       <div className="card-content">
                         <div className="card-topline">

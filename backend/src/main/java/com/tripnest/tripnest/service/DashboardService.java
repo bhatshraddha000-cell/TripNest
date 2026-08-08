@@ -16,8 +16,11 @@ import com.tripnest.tripnest.model.CustomUserDetails;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.TripStatus;
 import com.tripnest.tripnest.model.User;
+import com.tripnest.tripnest.model.TripMember;
+import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +30,7 @@ public class DashboardService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final TripMemberRepository tripMemberRepository;
     private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
@@ -55,10 +59,27 @@ public class DashboardService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DashboardResponse getDashboardData() {
         User user = getAuthenticatedUser();
-        List<Trip> allTrips = tripRepository.findByUser(user);
+        
+        // Legacy migration check: ensure owned trips have TripMember record
+        List<Trip> ownedTrips = tripRepository.findByUser(user);
+        for (Trip trip : ownedTrips) {
+            if (tripMemberRepository.findByTripIdAndUserId(trip.getId(), user.getId()).isEmpty()) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                tripMemberRepository.save(member);
+            }
+        }
+
+        List<TripMember> memberships = tripMemberRepository.findByUser(user);
+        List<Trip> allTrips = memberships.stream()
+                .map(TripMember::getTrip)
+                .toList();
         LocalDate today = LocalDate.now();
 
         long totalTrips = allTrips.size();

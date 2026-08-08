@@ -15,6 +15,8 @@ function ExpensesTab({ tripId, tripRole, currentUserId }) {
   // Form states
   const [showForm, setShowForm] = useState(false)
   const [editingExpenseId, setEditingExpenseId] = useState(null)
+  const [deleteExpenseId, setDeleteExpenseId] = useState(null)
+  const [deletingExpense, setDeletingExpense] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -142,16 +144,25 @@ function ExpensesTab({ tripId, tripRole, currentUserId }) {
     setShowForm(true)
   }
 
-  const handleDelete = async (expenseId) => {
-    if (!window.confirm('Are you sure you want to delete this expense?')) return
+  const handleDelete = (expenseId) => {
+    setDeleteExpenseId(expenseId)
+  }
+
+  const executeDelete = async () => {
+    if (!deleteExpenseId) return
     try {
+      setDeletingExpense(true)
       setError('')
       setSuccess('')
-      await expenseApi.deleteExpense(expenseId)
+      await expenseApi.deleteExpense(deleteExpenseId)
       setSuccess('Expense deleted successfully!')
+      setDeleteExpenseId(null)
       fetchData()
     } catch (err) {
       setError(err?.response?.data?.message ?? 'Failed to delete expense.')
+      setDeleteExpenseId(null)
+    } finally {
+      setDeletingExpense(false)
     }
   }
 
@@ -379,6 +390,21 @@ function ExpensesTab({ tripId, tripRole, currentUserId }) {
           </div>
         )}
       </div>
+
+      {deleteExpenseId && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', zIndex: 9999 }}>
+          <div style={{ background: 'var(--card-bg, #161d2b)', padding: '30px', borderRadius: '20px', maxWidth: '450px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h3 style={{ marginTop: 0, fontSize: '1.25rem', color: '#ffffff' }}>Delete Expense?</h3>
+            <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.5', margin: '12px 0 24px' }}>Are you sure you want to delete this expense record? This action cannot be undone.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="secondary-button" onClick={() => setDeleteExpenseId(null)} disabled={deletingExpense}>Cancel</button>
+              <button className="primary-button" onClick={executeDelete} disabled={deletingExpense} style={{ background: '#ef4444', borderColor: '#ef4444' }}>
+                {deletingExpense ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

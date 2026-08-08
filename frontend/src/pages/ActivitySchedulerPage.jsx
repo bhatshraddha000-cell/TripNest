@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/dashboard/Navbar.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
 import ActivitySchedulePanel from '../components/itinerary/ActivitySchedulePanel.jsx'
@@ -9,6 +9,7 @@ import { itineraryApi } from '../lib/itineraryApi.js'
 
 function ActivitySchedulerPage() {
   const { itineraryId } = useParams()
+  const navigate = useNavigate()
   const { user, logout, authLoading, isAuthenticated } = useAuth()
   const [entries, setEntries] = useState([])
   const [selected, setSelected] = useState(null)
@@ -28,13 +29,17 @@ function ActivitySchedulerPage() {
         const match = available.find((entry) => String(entry.itinerary.id) === itineraryId)
         if (!match) setError('The requested itinerary could not be found or you do not have permission to view it.')
         setSelected(match ?? null)
+      } else {
+        if (available.length > 0) {
+          navigate(`/activity-scheduler/${available[0].itinerary.id}`, { replace: true })
+        }
       }
     } catch (err) {
       setError(err?.response?.data?.message ?? 'Failed to load activity scheduling details.')
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, itineraryId])
+  }, [isAuthenticated, itineraryId, navigate])
 
   useEffect(() => { loadScheduler() }, [loadScheduler])
 
@@ -58,7 +63,7 @@ function ActivitySchedulerPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px', marginBottom: '28px' }}>
                 <SchedulerDetail label="DAY" value={`Day ${selected.itinerary.dayNumber}`} /><SchedulerDetail label="DAY TITLE" value={selected.itinerary.title} /><SchedulerDetail label="DATE" value={new Date(selected.itinerary.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} />
               </div>
-              <ActivitySchedulePanel tripId={selected.trip.id} itineraryId={selected.itinerary.id} />
+              <ActivitySchedulePanel tripId={selected.trip.id} itineraryId={selected.itinerary.id} tripRole={selected.trip.tripRole} />
             </>}
           </section>
         </main>
