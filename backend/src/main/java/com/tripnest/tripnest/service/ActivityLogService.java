@@ -41,7 +41,7 @@ public class ActivityLogService {
 
     @Transactional(readOnly = true)
     public List<ActivityLogResponse> getDashboardActivities(User user) {
-        List<ActivityLog> logs = activityLogRepository.findTop3ByUserOrderByCreatedAtDesc(user);
+        List<ActivityLog> logs = activityLogRepository.findTop5ByUserOrderByCreatedAtDesc(user);
         return mapToResponseList(logs);
     }
 

@@ -11,13 +11,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tripnest.tripnest.dto.ActivityLogResponse;
 import com.tripnest.tripnest.dto.DashboardResponse;
+import com.tripnest.tripnest.dto.NotificationResponse;
 import com.tripnest.tripnest.dto.TripResponse;
 import com.tripnest.tripnest.model.CustomUserDetails;
+import com.tripnest.tripnest.model.Expense;
+import com.tripnest.tripnest.model.Notification;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.TripStatus;
 import com.tripnest.tripnest.model.User;
 import com.tripnest.tripnest.model.TripMember;
 import com.tripnest.tripnest.model.TripMemberRole;
+import com.tripnest.tripnest.repository.ExpenseRepository;
+import com.tripnest.tripnest.repository.NotificationRepository;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 import com.tripnest.tripnest.repository.TripMemberRepository;
@@ -31,6 +36,8 @@ public class DashboardService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripMemberRepository tripMemberRepository;
+    private final ExpenseRepository expenseRepository;
+    private final NotificationRepository notificationRepository;
     private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
@@ -87,6 +94,14 @@ public class DashboardService {
                 .mapToDouble(t -> t.getBudget() != null ? t.getBudget() : 0.0)
                 .sum();
 
+        List<Expense> expenses = allTrips.isEmpty() ? List.of() : expenseRepository.findByTripIn(allTrips);
+        double totalExpenses = expenses.stream()
+                .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
+                .sum();
+
+        double remainingBudget = totalBudget - totalExpenses;
+        double budgetPercentage = totalBudget > 0 ? (totalExpenses / totalBudget) * 100.0 : 0.0;
+
         List<TripResponse> upcomingTrips = allTrips.stream()
                 .filter(t -> t.getStartDate() != null && !t.getStartDate().isBefore(today))
                 .filter(t -> t.getStatus() != TripStatus.COMPLETED && t.getStatus() != TripStatus.CANCELLED)
@@ -98,12 +113,28 @@ public class DashboardService {
 
         List<ActivityLogResponse> recentActivities = activityLogService.getDashboardActivities(user);
 
+        List<NotificationResponse> notifications = notificationRepository.findTop5ByReceiverOrderByCreatedAtDesc(user)
+                .stream()
+                .map(n -> NotificationResponse.builder()
+                        .id(n.getId())
+                        .title(n.getTitle())
+                        .message(n.getMessage())
+                        .type(n.getType())
+                        .isRead(n.getIsRead())
+                        .createdAt(n.getCreatedAt())
+                        .build())
+                .toList();
+
         return DashboardResponse.builder()
                 .totalTrips(totalTrips)
                 .upcomingTripsCount(upcomingTripsCount)
                 .totalBudget(totalBudget)
+                .totalExpenses(totalExpenses)
+                .remainingBudget(remainingBudget)
+                .budgetPercentage(budgetPercentage)
                 .upcomingTrips(upcomingTrips)
                 .recentActivities(recentActivities)
+                .notifications(notifications)
                 .build();
     }
 }

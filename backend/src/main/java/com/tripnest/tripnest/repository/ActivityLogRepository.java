@@ -14,6 +14,8 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
 
     List<ActivityLog> findTop3ByUserOrderByCreatedAtDesc(User user);
 
+    List<ActivityLog> findTop5ByUserOrderByCreatedAtDesc(User user);
+
     List<ActivityLog> findTop10ByUserOrderByCreatedAtDesc(User user);
 
     long countByUser(User user);

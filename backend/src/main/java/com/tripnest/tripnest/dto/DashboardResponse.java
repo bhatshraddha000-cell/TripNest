@@ -18,6 +18,10 @@ public class DashboardResponse {
     private long totalTrips;
     private long upcomingTripsCount;
     private double totalBudget;
+    private double totalExpenses;
+    private double remainingBudget;
+    private double budgetPercentage;
     private List<TripResponse> upcomingTrips;
     private List<ActivityLogResponse> recentActivities;
+    private List<NotificationResponse> notifications;
 }
