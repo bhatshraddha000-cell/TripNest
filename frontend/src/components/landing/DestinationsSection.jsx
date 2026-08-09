@@ -53,7 +53,7 @@ function DestinationsSection({ searchValue }) {
   })
 
   return (
-    <section className="content-section dynamic-destinations-main" id="destinations" style={{ padding: '0' }}>
+    <section className="dynamic-destinations-main" id="destinations" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto', background: 'transparent', minHeight: 'auto' }}>
       <div className="section-heading" style={{ marginBottom: '2rem' }}>
         <p className="eyebrow">Popular escapes</p>
         <h2>Discover destinations made for shared memories.</h2>
@@ -72,8 +72,17 @@ function DestinationsSection({ searchValue }) {
           {filteredDestinations.map((dest, i) => (
             <article className="destination-card glass-card fade-in" key={dest.name} style={{animationDelay: `${i * 0.1}s`}}>
               <div className="card-image-wrapper">
-                {dest.imageUrl && <img src={dest.imageUrl} alt={dest.name} loading="lazy" />}
-                <div className="card-overlay"></div>
+                <span style={{ position: 'absolute', fontSize: '3rem', opacity: 0.15, zIndex: 1 }}>🗺️</span>
+                {dest.imageUrl && (
+                  <img 
+                    src={dest.imageUrl} 
+                    alt={dest.name} 
+                    loading="lazy" 
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                    style={{ zIndex: 2 }}
+                  />
+                )}
+                <div className="card-overlay" style={{ zIndex: 3 }}></div>
               </div>
               <div className="card-content">
                 <div className="card-topline" style={{ display: 'flex', justifyContent: 'space-between' }}>

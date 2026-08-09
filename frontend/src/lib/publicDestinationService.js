@@ -29,15 +29,15 @@ export const publicDestinationService = {
    */
   async getRandomDestinations(count = 8) {
     const popular = [
-      { name: 'Paris', country: 'France', description: 'The city of light.', imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e907600702e?auto=format&fit=crop&q=80&w=1000', rating: '4.8' },
-      { name: 'Bali', country: 'Indonesia', description: 'Tropical paradise.', imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=1000', rating: '4.9' },
-      { name: 'Tokyo', country: 'Japan', description: 'A bustling metropolis.', imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=1000', rating: '4.9' },
-      { name: 'Santorini', country: 'Greece', description: 'Stunning sunsets.', imageUrl: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&q=80&w=1000', rating: '4.8' },
-      { name: 'New York', country: 'USA', description: 'The big apple.', imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=1000', rating: '4.7' },
-      { name: 'Dubai', country: 'UAE', description: 'Modern luxury.', imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=1000', rating: '4.6' },
-      { name: 'Rome', country: 'Italy', description: 'Ancient history.', imageUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1000', rating: '4.8' },
-      { name: 'Kyoto', country: 'Japan', description: 'Historic temples.', imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=1000', rating: '4.8' },
-      { name: 'London', country: 'UK', description: 'Historic capital.', imageUrl: 'https://images.unsplash.com/photo-1513635269975-59693e0cd156?auto=format&fit=crop&q=80&w=1000', rating: '4.7' }
+      { name: 'Paris', country: 'France', description: 'The city of light.', imageUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1000&q=80', rating: '4.8' },
+      { name: 'Bali', country: 'Indonesia', description: 'Tropical paradise.', imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80', rating: '4.9' },
+      { name: 'Tokyo', country: 'Japan', description: 'A bustling metropolis.', imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1000&q=80', rating: '4.9' },
+      { name: 'Santorini', country: 'Greece', description: 'Stunning sunsets.', imageUrl: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?auto=format&fit=crop&w=1000&q=80', rating: '4.8' },
+      { name: 'New York', country: 'USA', description: 'The big apple.', imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=1000&q=80', rating: '4.7' },
+      { name: 'Dubai', country: 'UAE', description: 'Modern luxury.', imageUrl: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1000&q=80', rating: '4.6' },
+      { name: 'Rome', country: 'Italy', description: 'Ancient history.', imageUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1000&q=80', rating: '4.8' },
+      { name: 'Kyoto', country: 'Japan', description: 'Historic temples.', imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1000&q=80', rating: '4.8' },
+      { name: 'London', country: 'UK', description: 'Historic capital.', imageUrl: 'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=1000&q=80', rating: '4.7' }
     ];
     return [...popular].sort(() => 0.5 - Math.random()).slice(0, count);
   },

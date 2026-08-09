@@ -30,4 +30,5 @@ public class ActivityResponse {
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long createdByUserId;
 }

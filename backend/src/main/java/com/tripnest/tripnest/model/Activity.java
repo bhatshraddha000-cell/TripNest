@@ -72,4 +72,9 @@ public class Activity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "itinerary_id", nullable = false)
     private Itinerary itinerary;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
 }

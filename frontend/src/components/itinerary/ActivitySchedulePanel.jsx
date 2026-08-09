@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { activityApi } from '../../lib/activityApi.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const activityTypes = [
   ['SIGHTSEEING', 'Sightseeing'],
@@ -16,7 +17,8 @@ const overlayStyle = { position: 'fixed', inset: 0, zIndex: 9999, padding: '20px
 const modalStyle = { width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', padding: '30px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }
 const inputStyle = { width: '100%', boxSizing: 'border-box', border: '1px solid var(--input-border)', background: 'var(--input-bg)', borderRadius: '12px', padding: '10px 14px', font: 'inherit', color: 'var(--input-text)' }
 
-function ActivitySchedulePanel({ tripId, itineraryId }) {
+function ActivitySchedulePanel({ tripId, itineraryId, tripRole }) {
+  const { user } = useAuth()
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -115,8 +117,12 @@ function ActivitySchedulePanel({ tripId, itineraryId }) {
           {activity.description && <p className="activity-description">{activity.description}</p>}
           {activity.notes && <p className="activity-notes">Notes: {activity.notes}</p>}
           <div className="activity-actions">
-            <button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button>
-            <button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button>
+            {(tripRole === 'GROUP_ADMIN' || activity.createdByUserId === user?.userId) && (
+              <>
+                <button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button>
+                <button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button>
+              </>
+            )}
             <Link 
               to={`/trips/${tripId}?tab=expenses&activityId=${activity.id}&amount=${activity.estimatedCost}&title=${encodeURIComponent(activity.title)}`} 
               className="secondary-button compact-button" 

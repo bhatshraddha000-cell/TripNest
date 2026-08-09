@@ -6,8 +6,11 @@ import com.tripnest.tripnest.dto.DestinationSummaryResponse;
 import com.tripnest.tripnest.dto.AttractionSummary;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.User;
+import com.tripnest.tripnest.model.TripMember;
+import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,6 +27,7 @@ public class DestinationService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final TripMemberRepository tripMemberRepository;
     private final NominatimClient nominatimClient;
     private final OpenMeteoClient openMeteoClient;
     private final RestCountriesClient restCountriesClient;
@@ -32,6 +37,7 @@ public class DestinationService {
 
     public DestinationService(TripRepository tripRepository,
                               UserRepository userRepository,
+                              TripMemberRepository tripMemberRepository,
                               NominatimClient nominatimClient,
                               OpenMeteoClient openMeteoClient,
                               RestCountriesClient restCountriesClient,
@@ -40,6 +46,7 @@ public class DestinationService {
                               ImageClient imageClient) {
         this.tripRepository = tripRepository;
         this.userRepository = userRepository;
+        this.tripMemberRepository = tripMemberRepository;
         this.nominatimClient = nominatimClient;
         this.openMeteoClient = openMeteoClient;
         this.restCountriesClient = restCountriesClient;
@@ -48,13 +55,31 @@ public class DestinationService {
         this.imageClient = imageClient;
     }
 
+
     public List<DestinationSummaryResponse> getMyUpcomingDestinations() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User user = userRepository.findByEmail(username.trim().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        List<Trip> upcomingTrips = tripRepository.findByUserAndStartDateGreaterThanEqual(user, LocalDate.now());
+        // Legacy migration check: ensure owned trips have TripMember record
+        List<Trip> ownedTrips = tripRepository.findByUser(user);
+        for (Trip trip : ownedTrips) {
+            if (tripMemberRepository.findByTripIdAndUserId(trip.getId(), user.getId()).isEmpty()) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                tripMemberRepository.save(member);
+            }
+        }
+
+        List<TripMember> memberships = tripMemberRepository.findByUser(user);
+        List<Trip> upcomingTrips = memberships.stream()
+                .map(TripMember::getTrip)
+                .filter(trip -> trip.getStartDate().isAfter(LocalDate.now()) || trip.getStartDate().isEqual(LocalDate.now()))
+                .collect(Collectors.toList());
 
         return upcomingTrips.stream()
                 .map(trip -> {
@@ -85,8 +110,18 @@ public class DestinationService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
                 
-        if (!trip.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized access to this trip");
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(tripId, user.getId());
+        if (membershipOpt.isEmpty()) {
+            if (trip.getUser().getId().equals(user.getId())) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                tripMemberRepository.save(member);
+            } else {
+                throw new RuntimeException("Unauthorized access to this trip");
+            }
         }
         
         return getDestinationData(trip.getDestination());

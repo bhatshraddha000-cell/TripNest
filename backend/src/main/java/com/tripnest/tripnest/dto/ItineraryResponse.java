@@ -25,5 +25,6 @@ public class ItineraryResponse {
     private Long tripId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long createdByUserId;
     private List<ActivityResponse> activities;
 }

@@ -122,7 +122,18 @@ function TripDetailsPage() {
           </main>
         </div>
       </div>
-      {showDelete && <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', zIndex: 9999 }}><div style={{ background: 'var(--card-bg, #161d2b)', padding: '30px', borderRadius: '20px', maxWidth: '450px', border: '1px solid rgba(255,255,255,0.08)' }}><h3>Delete Escape Plan?</h3><p style={{ color: 'var(--text-secondary)' }}>Are you sure you want to delete “{trip?.title}”? All associated itinerary days and activities will be lost.</p><div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button className="secondary-button" onClick={() => setShowDelete(false)} disabled={deleting}>Keep Plan</button><button className="primary-button" onClick={deleteTrip} disabled={deleting} style={{ background: '#ef4444', borderColor: '#ef4444' }}>{deleting ? 'Deleting...' : 'Yes, Delete'}</button></div></div></div>}
+      {showDelete && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', zIndex: 9999 }}>
+          <div style={{ background: 'var(--card-bg, #161d2b)', padding: '30px', borderRadius: '20px', maxWidth: '450px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h3 style={{ color: '#ffffff', marginTop: 0, fontSize: '1.25rem' }}>Delete Escape Plan?</h3>
+            <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.5', margin: '12px 0 24px' }}>Are you sure you want to delete “{trip?.title}”? All associated itinerary days and activities will be lost.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="secondary-button" onClick={() => setShowDelete(false)} disabled={deleting}>Keep Plan</button>
+              <button className="primary-button" onClick={deleteTrip} disabled={deleting} style={{ background: '#ef4444', borderColor: '#ef4444' }}>{deleting ? 'Deleting...' : 'Yes, Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
