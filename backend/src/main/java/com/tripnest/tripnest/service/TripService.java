@@ -24,6 +24,7 @@ import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.repository.TripMemberRepository;
 import com.tripnest.tripnest.repository.TripInvitationRepository;
 import com.tripnest.tripnest.repository.ExpenseRepository;
+import com.tripnest.tripnest.repository.ExpenseSplitRepository;
 import com.tripnest.tripnest.repository.DocumentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class TripService {
     private final TripMemberRepository tripMemberRepository;
     private final TripInvitationRepository tripInvitationRepository;
     private final ExpenseRepository expenseRepository;
+    private final ExpenseSplitRepository expenseSplitRepository;
     private final DocumentRepository documentRepository;
 
 
@@ -49,6 +51,24 @@ public class TripService {
         }
         return userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    private TripMember getMemberOrOwnerAsAdmin(Long tripId, User user) {
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(tripId, user.getId());
+        if (membershipOpt.isPresent()) {
+            return membershipOpt.get();
+        }
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+        if (trip.getUser().getId().equals(user.getId())) {
+            TripMember member = TripMember.builder()
+                    .trip(trip)
+                    .user(user)
+                    .tripRole(TripMemberRole.GROUP_ADMIN)
+                    .build();
+            return tripMemberRepository.save(member);
+        }
+        throw new TripNotFoundException("Trip not found");
     }
 
     private void validateDates(java.time.LocalDate startDate, java.time.LocalDate endDate) {
@@ -104,26 +124,13 @@ public class TripService {
         activityLogService.logActivity(user, "TRIP", saved.getId(), "CREATED", "Trip Created", "Created trip \"" + saved.getTitle() + "\"");
         
         TripResponse resp = mapToResponse(saved);
-        resp.setTripRole("GROUP_ADMIN");
+        resp.setTripRole(TripMemberRole.GROUP_ADMIN.name());
         return resp;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<TripResponse> getAllTrips() {
         User user = getAuthenticatedUser();
-        
-        // Legacy migration: find trips where user is owner, but no TripMember record exists
-        List<Trip> ownedTrips = tripRepository.findByUser(user);
-        for (Trip trip : ownedTrips) {
-            if (tripMemberRepository.findByTripIdAndUserId(trip.getId(), user.getId()).isEmpty()) {
-                TripMember member = TripMember.builder()
-                        .trip(trip)
-                        .user(user)
-                        .tripRole(TripMemberRole.GROUP_ADMIN)
-                        .build();
-                tripMemberRepository.save(member);
-            }
-        }
 
         List<TripMember> memberships = tripMemberRepository.findByUser(user);
         return memberships.stream()
@@ -138,28 +145,7 @@ public class TripService {
     @Transactional
     public TripResponse getTripById(Long id) {
         User user = getAuthenticatedUser();
-        
-        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(id, user.getId());
-        if (membershipOpt.isEmpty()) {
-            // Legacy migration check: if they are the owner, make them group admin
-            Trip trip = tripRepository.findById(id)
-                    .orElseThrow(() -> new TripNotFoundException("Trip not found"));
-            if (trip.getUser().getId().equals(user.getId())) {
-                TripMember member = TripMember.builder()
-                        .trip(trip)
-                        .user(user)
-                        .tripRole(TripMemberRole.GROUP_ADMIN)
-                        .build();
-                TripMember savedMember = tripMemberRepository.save(member);
-                TripResponse resp = mapToResponse(trip);
-                resp.setTripRole(savedMember.getTripRole().name());
-                return resp;
-            } else {
-                throw new TripNotFoundException("Trip not found or access denied");
-            }
-        }
-        
-        TripMember membership = membershipOpt.get();
+        TripMember membership = getMemberOrOwnerAsAdmin(id, user);
         TripResponse resp = mapToResponse(membership.getTrip());
         resp.setTripRole(membership.getTripRole().name());
         return resp;
@@ -168,8 +154,7 @@ public class TripService {
     @Transactional
     public TripResponse updateTrip(Long id, UpdateTripRequest request) {
         User user = getAuthenticatedUser();
-        TripMember membership = tripMemberRepository.findByTripIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+        TripMember membership = getMemberOrOwnerAsAdmin(id, user);
 
         if (membership.getTripRole() != TripMemberRole.GROUP_ADMIN) {
             throw new IllegalArgumentException("Only Group Admin can edit the trip");
@@ -198,8 +183,7 @@ public class TripService {
     @Transactional
     public void deleteTrip(Long id) {
         User user = getAuthenticatedUser();
-        TripMember membership = tripMemberRepository.findByTripIdAndUserId(id, user.getId())
-                .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+        TripMember membership = getMemberOrOwnerAsAdmin(id, user);
 
         if (membership.getTripRole() != TripMemberRole.GROUP_ADMIN) {
             throw new IllegalArgumentException("Only Group Admin can delete the trip");
@@ -210,9 +194,10 @@ public class TripService {
         Long tripId = trip.getId();
 
         // Clean up new associations before deletion
+        expenseSplitRepository.deleteByExpenseTripId(tripId);
+        expenseRepository.deleteByTripId(tripId);
         tripMemberRepository.deleteByTripId(tripId);
         tripInvitationRepository.deleteByTripId(tripId);
-        expenseRepository.deleteByTripId(tripId);
         documentRepository.deleteByTripId(tripId);
 
         tripRepository.delete(trip);

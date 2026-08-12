@@ -121,7 +121,7 @@ public class ActivityService {
         return mapToResponse(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ActivityResponse> getAllActivities(Long tripId, Long itineraryId) {
         User user = getAuthenticatedUser();
         getAuthenticatedItinerary(tripId, itineraryId, user); // verifies ownership and binding
@@ -132,7 +132,7 @@ public class ActivityService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ActivityResponse getActivityById(Long tripId, Long itineraryId, Long activityId) {
         User user = getAuthenticatedUser();
         getAuthenticatedItinerary(tripId, itineraryId, user); // verifies ownership and binding

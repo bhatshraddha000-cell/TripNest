@@ -1,6 +1,9 @@
 package com.tripnest.tripnest.dto;
 
 import java.time.LocalDate;
+import java.util.List;
+
+import com.tripnest.tripnest.model.SplitType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,11 +30,20 @@ public class UpdateExpenseRequest {
     private String category;
 
     @NotNull(message = "Amount is required")
-    @Positive(message = "Amount must be positive")
+    @Positive(message = "Expense amount must be greater than zero")
     private Double amount;
 
     @NotNull(message = "Date is required")
     private LocalDate date;
 
     private String notes;
+
+    private Long paidById;
+
+    @Builder.Default
+    private SplitType splitType = SplitType.EQUAL;
+
+    private List<Long> participantIds;
+
+    private List<ParticipantSplitRequest> customSplits;
 }

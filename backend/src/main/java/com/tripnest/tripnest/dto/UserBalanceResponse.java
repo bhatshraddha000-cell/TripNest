@@ -11,10 +11,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BudgetSummaryResponse {
-    private Double budget;
-    private Double estimatedActivities;
-    private Double expectedExpense;
-    private Double actualExpenses;
-    private Double remainingBudget;
+public class UserBalanceResponse {
+    private Double youOwe;
+    private Double youShouldReceive;
+    private Double netBalance;
 }

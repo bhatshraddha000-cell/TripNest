@@ -11,10 +11,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BudgetSummaryResponse {
-    private Double budget;
-    private Double estimatedActivities;
-    private Double expectedExpense;
-    private Double actualExpenses;
-    private Double remainingBudget;
+public class MemberBalanceDto {
+    private Long userId;
+    private String name;
+    private String email;
+    private String profileImage;
+    private Double youShouldReceive;
+    private Double youOwe;
+    private Double netBalance;
 }
