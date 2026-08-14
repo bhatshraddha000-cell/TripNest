@@ -82,6 +82,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(Map.of("message", exception.getMessage()));
     }
 
+    @ExceptionHandler(TripOverlapException.class)
+    public ResponseEntity<Map<String, String>> handleTripOverlap(TripOverlapException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(ActivityOverlapException.class)
+    public ResponseEntity<Map<String, String>> handleActivityOverlap(ActivityOverlapException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
     @Override
 protected ResponseEntity<Object> handleHttpMessageNotReadable(
         HttpMessageNotReadableException ex,

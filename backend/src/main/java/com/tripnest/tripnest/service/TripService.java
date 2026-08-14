@@ -11,6 +11,7 @@ import com.tripnest.tripnest.dto.CreateTripRequest;
 import com.tripnest.tripnest.dto.TripResponse;
 import com.tripnest.tripnest.dto.UpdateTripRequest;
 import com.tripnest.tripnest.exception.TripNotFoundException;
+import com.tripnest.tripnest.exception.TripOverlapException;
 import com.tripnest.tripnest.exception.TripValidationException;
 import com.tripnest.tripnest.model.CustomUserDetails;
 import com.tripnest.tripnest.model.Trip;
@@ -98,6 +99,9 @@ public class TripService {
     public TripResponse createTrip(CreateTripRequest request) {
         User user = getAuthenticatedUser();
         validateDates(request.getStartDate(), request.getEndDate());
+        if (tripRepository.existsOverlappingTripForUser(user, request.getStartDate(), request.getEndDate())) {
+            throw new TripOverlapException("Trip dates overlap with an existing trip. Please choose a different date range.");
+        }
 
         Trip trip = Trip.builder()
                 .title(request.getTitle())
@@ -162,6 +166,9 @@ public class TripService {
 
         Trip trip = membership.getTrip();
         validateDates(request.getStartDate(), request.getEndDate());
+        if (tripRepository.existsOverlappingTripForUserExcludingTrip(user, trip.getId(), request.getStartDate(), request.getEndDate())) {
+            throw new TripOverlapException("Trip dates overlap with an existing trip. Please choose a different date range.");
+        }
 
         trip.setTitle(request.getTitle());
         trip.setDestination(request.getDestination());

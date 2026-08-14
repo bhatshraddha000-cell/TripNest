@@ -65,7 +65,25 @@ function ActivitySchedulePanel({ tripId, itineraryId, tripRole }) {
     if (!data.activityType) fieldErrors.activityType = 'Activity type is required'
     if (!data.location.trim()) fieldErrors.location = 'Location is required'
     if (data.estimatedCost === '' || !Number.isFinite(Number(data.estimatedCost)) || Number(data.estimatedCost) < 0) fieldErrors.estimatedCost = 'Estimated cost must be a non-negative number'
-    if (data.startTime && data.endTime && data.endTime < data.startTime) fieldErrors.endTime = 'End time cannot be before start time'
+    if (data.startTime && data.endTime) {
+      if (data.endTime < data.startTime) {
+        fieldErrors.endTime = 'End time cannot be before start time'
+      } else {
+        const isOverlap = activities.some((act) => {
+          if (modal.mode === 'edit' && act.id === modal.id) return false
+          if (!act.startTime || !act.endTime) return false
+          const actStart = act.startTime.slice(0, 5)
+          const actEnd = act.endTime.slice(0, 5)
+          return data.startTime < actEnd && data.endTime > actStart
+        })
+        if (isOverlap) {
+          const msg = 'This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.'
+          fieldErrors.startTime = msg
+          setModal((current) => ({ ...current, error: msg }))
+        }
+      }
+    }
+
     if (Object.keys(fieldErrors).length) {
       setModal((current) => ({ ...current, fieldErrors }))
       return

@@ -21,6 +21,7 @@ function EditTripPage() {
     description: ''
   })
 
+  const [allTrips, setAllTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -31,7 +32,11 @@ function EditTripPage() {
       if (!isAuthenticated || !id) return
       try {
         setLoading(true)
-        const data = await tripApi.getTrip(id)
+        const [data, trips] = await Promise.all([
+          tripApi.getTrip(id),
+          tripApi.getAllTrips().catch(() => [])
+        ])
+        setAllTrips(trips)
         setFormData({
           title: data.title,
           destination: data.destination,
@@ -93,6 +98,17 @@ function EditTripPage() {
       const end = new Date(formData.endDate)
       if (end < start) {
         errors.endDate = 'End date cannot be before start date'
+      } else {
+        const currentTripId = Number(id)
+        const isOverlap = allTrips.some((t) => {
+          if (t.id === currentTripId) return false
+          if (t.status === 'CANCELLED') return false
+          return formData.startDate <= t.endDate && formData.endDate >= t.startDate
+        })
+        if (isOverlap) {
+          errors.startDate = 'Trip dates overlap with an existing trip. Please choose a different date range.'
+          setError('Trip dates overlap with an existing trip. Please choose a different date range.')
+        }
       }
     }
 

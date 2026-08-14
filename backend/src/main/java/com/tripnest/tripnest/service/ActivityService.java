@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tripnest.tripnest.dto.CreateActivityRequest;
 import com.tripnest.tripnest.dto.ActivityResponse;
 import com.tripnest.tripnest.dto.UpdateActivityRequest;
+import com.tripnest.tripnest.exception.ActivityOverlapException;
 import com.tripnest.tripnest.exception.TripNotFoundException;
 import com.tripnest.tripnest.exception.TripValidationException;
 import com.tripnest.tripnest.model.Activity;
@@ -102,6 +103,11 @@ public class ActivityService {
         Itinerary itinerary = getAuthenticatedItinerary(tripId, itineraryId, user);
 
         validateTimes(request.getStartTime(), request.getEndTime());
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (activityRepository.existsOverlappingActivityForItinerary(itineraryId, request.getStartTime(), request.getEndTime())) {
+                throw new ActivityOverlapException("This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.");
+            }
+        }
 
         Activity activity = Activity.builder()
                 .title(request.getTitle())
@@ -164,6 +170,11 @@ public class ActivityService {
         }
 
         validateTimes(request.getStartTime(), request.getEndTime());
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (activityRepository.existsOverlappingActivityForItineraryExcludingActivity(itineraryId, activityId, request.getStartTime(), request.getEndTime())) {
+                throw new ActivityOverlapException("This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.");
+            }
+        }
 
         activity.setTitle(request.getTitle());
         activity.setDescription(request.getDescription());
