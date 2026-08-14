@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tripnest.tripnest.dto.CreateTripRequest;
 import com.tripnest.tripnest.dto.TripResponse;
 import com.tripnest.tripnest.dto.UpdateTripRequest;
+import com.tripnest.tripnest.exception.TripCapacityException;
 import com.tripnest.tripnest.exception.TripNotFoundException;
 import com.tripnest.tripnest.exception.TripOverlapException;
 import com.tripnest.tripnest.exception.TripValidationException;
@@ -98,6 +99,9 @@ public class TripService {
     @Transactional
     public TripResponse createTrip(CreateTripRequest request) {
         User user = getAuthenticatedUser();
+        if (request.getTravelers() == null || request.getTravelers() < 1) {
+            throw new TripValidationException("Number of travelers must be at least 1");
+        }
         validateDates(request.getStartDate(), request.getEndDate());
         if (tripRepository.existsOverlappingTripForUser(user, request.getStartDate(), request.getEndDate())) {
             throw new TripOverlapException("Trip dates overlap with an existing trip. Please choose a different date range.");
@@ -165,6 +169,13 @@ public class TripService {
         }
 
         Trip trip = membership.getTrip();
+        if (request.getTravelers() == null || request.getTravelers() < 1) {
+            throw new TripValidationException("Number of travelers must be at least 1");
+        }
+        long currentMembers = tripMemberRepository.countByTripId(id);
+        if (request.getTravelers() < currentMembers) {
+            throw new TripCapacityException("You cannot reduce the trip capacity below the current number of travelers (" + currentMembers + ").");
+        }
         validateDates(request.getStartDate(), request.getEndDate());
         if (tripRepository.existsOverlappingTripForUserExcludingTrip(user, trip.getId(), request.getStartDate(), request.getEndDate())) {
             throw new TripOverlapException("Trip dates overlap with an existing trip. Please choose a different date range.");

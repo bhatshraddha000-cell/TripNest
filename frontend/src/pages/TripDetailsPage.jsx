@@ -115,7 +115,7 @@ function TripDetailsPage() {
                 )}
 
                 {activeTab === 'members' && (
-                  <MembersTab tripId={trip.id} tripRole={trip.tripRole} />
+                  <MembersTab tripId={trip.id} tripRole={trip.tripRole} maxCapacity={trip.travelers} />
                 )}
               </>}
             </section>

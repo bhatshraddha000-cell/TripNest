@@ -94,6 +94,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(Map.of("message", exception.getMessage()));
     }
 
+    @ExceptionHandler(TripCapacityException.class)
+    public ResponseEntity<Map<String, String>> handleTripCapacity(TripCapacityException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
     @Override
 protected ResponseEntity<Object> handleHttpMessageNotReadable(
         HttpMessageNotReadableException ex,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collaborationApi } from '../lib/collaborationApi.js'
 
-function MembersTab({ tripId, tripRole }) {
+function MembersTab({ tripId, tripRole, maxCapacity }) {
   const [members, setMembers] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -11,6 +11,7 @@ function MembersTab({ tripId, tripRole }) {
   const [success, setSuccess] = useState('')
 
   const isGroupAdmin = tripRole === 'GROUP_ADMIN'
+  const isFull = typeof maxCapacity === 'number' && maxCapacity > 0 && members.length >= maxCapacity
 
   const fetchMembers = async () => {
     try {
@@ -30,7 +31,7 @@ function MembersTab({ tripId, tripRole }) {
 
   const handleSearch = async (e) => {
     e.preventDefault()
-    if (!searchQuery.trim()) return
+    if (!searchQuery.trim() || isFull) return
     try {
       setSearchLoading(true)
       setError('')
@@ -52,6 +53,10 @@ function MembersTab({ tripId, tripRole }) {
   }
 
   const handleInvite = async (emailOrUsername) => {
+    if (isFull) {
+      setError(`This trip has reached its maximum capacity of ${maxCapacity} travelers.`)
+      return
+    }
     try {
       setError('')
       setSuccess('')
@@ -88,22 +93,38 @@ function MembersTab({ tripId, tripRole }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Capacity Indicator Banner */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '16px', background: isFull ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.02)', border: isFull ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--border)' }}>
+        <div>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>TRIP CAPACITY</span>
+          <strong style={{ fontSize: '1.1rem', color: isFull ? '#ef4444' : 'var(--text)' }}>
+            {members.length} / {maxCapacity ?? '—'} Travelers {isFull ? '(FULL)' : ''}
+          </strong>
+        </div>
+        {isFull && (
+          <span style={{ fontSize: '0.85rem', color: '#ef4444', fontWeight: 600 }}>Maximum capacity reached</span>
+        )}
+      </div>
+
       {error && <div className="status-message error" style={{ padding: '12px', borderRadius: '8px', margin: 0 }}>{error}</div>}
       {success && <div className="status-message success" style={{ padding: '12px', borderRadius: '8px', margin: 0, backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>{success}</div>}
 
       {/* Invite Member Section (only visible to GROUP_ADMIN) */}
       {isGroupAdmin && (
-        <div style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px' }}>
+        <div style={{ padding: '20px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', opacity: isFull ? 0.75 : 1 }}>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem' }}>Invite Travel Companion</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 16px 0' }}>
-            Search registered TripNest users by email address or full name.
+            {isFull
+              ? `This trip has reached its maximum capacity of ${maxCapacity} travelers. Remove a member or increase capacity to invite more companions.`
+              : 'Search registered TripNest users by email address or full name.'}
           </p>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px' }}>
             <input
               type="text"
-              placeholder="Enter email or name..."
+              placeholder={isFull ? `Capacity full (${members.length}/${maxCapacity})` : 'Enter email or name...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={isFull}
               style={{
                 flex: 1,
                 padding: '10px 14px',
@@ -114,13 +135,13 @@ function MembersTab({ tripId, tripRole }) {
                 outline: 'none'
               }}
             />
-            <button className="primary-button" type="submit" disabled={searchLoading}>
+            <button className="primary-button" type="submit" disabled={searchLoading || isFull}>
               {searchLoading ? 'Searching...' : 'Search'}
             </button>
           </form>
 
           {/* Search Results */}
-          {searchResults.length > 0 && (
+          {searchResults.length > 0 && !isFull && (
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {searchResults.map(res => (
                 <div
@@ -158,6 +179,7 @@ function MembersTab({ tripId, tripRole }) {
                     className="secondary-button"
                     style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                     onClick={() => handleInvite(res.email)}
+                    disabled={isFull}
                   >
                     Invite
                   </button>
