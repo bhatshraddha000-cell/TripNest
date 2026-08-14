@@ -117,6 +117,9 @@ public class TripControllerTest {
     private com.tripnest.tripnest.repository.TripChatMessageRepository tripChatMessageRepository;
 
     @Autowired
+    private com.tripnest.tripnest.repository.TripReminderRepository tripReminderRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -148,6 +151,7 @@ public class TripControllerTest {
         activityLogRepository.deleteAll();
         notificationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
+        tripReminderRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
 
