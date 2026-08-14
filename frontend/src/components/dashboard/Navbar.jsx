@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext.jsx'
 import { getProfileImageUrl } from '../../lib/api.js'
 import { collaborationApi } from '../../lib/collaborationApi.js'
 import { notificationApi } from '../../lib/notificationApi.js'
+import { tripApi } from '../../lib/tripApi.js'
 
 function Navbar({ userName, userEmail, onLogout, profileImage }) {
   const navigate = useNavigate()
@@ -16,6 +17,19 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
   const [invitations, setInvitations] = useState([])
   const dropdownRef = useRef(null)
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const searchRef = useRef(null)
+
+  // Safe arrays
+  const notifList = Array.isArray(notifications) ? notifications : []
+  const invList = Array.isArray(invitations) ? invitations : []
+  const searchList = Array.isArray(searchResults) ? searchResults : []
+
   const initials = (userName || 'Traveler')
     .split(' ')
     .map((word) => word[0])
@@ -23,15 +37,46 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
     .slice(0, 2)
     .toUpperCase()
 
-  // Fetch data
+  // Debounced trip search
+  useEffect(() => {
+    if (!searchQuery || !searchQuery.trim()) {
+      setSearchResults([])
+      setIsSearching(false)
+      setSearchError('')
+      return
+    }
+
+    setIsSearching(true)
+    setSearchError('')
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await tripApi.searchTrips(searchQuery)
+        setSearchResults(Array.isArray(results) ? results : [])
+        setShowSearchDropdown(true)
+      } catch (err) {
+        console.error('Error searching trips:', err)
+        setSearchResults([])
+        setSearchError('Unable to search your trips.')
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch notifications
   const fetchData = async () => {
     try {
       const notifs = await notificationApi.getNotifications()
       const invs = await collaborationApi.getPendingInvitations()
-      setNotifications(notifs)
-      setInvitations(invs)
+      setNotifications(Array.isArray(notifs) ? notifs : [])
+      setInvitations(Array.isArray(invs) ? invs : [])
     } catch (error) {
       console.error('Error fetching notifications:', error)
+      setNotifications([])
+      setInvitations([])
     }
   }
 
@@ -42,18 +87,21 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
     return () => clearInterval(timer)
   }, [])
 
-  // Close dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false)
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const unreadCount = notifications.filter(n => !n.isRead).length + invitations.length
+  const unreadCount = notifList.filter((n) => n && !n.isRead).length + invList.length
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -106,8 +154,10 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
       Older: []
     }
 
-    notifications.forEach(n => {
+    notifList.forEach((n) => {
+      if (!n || !n.createdAt) return
       const d = new Date(n.createdAt)
+      if (isNaN(d.getTime())) return
       if (d.toDateString() === today.toDateString()) {
         groups.Today.push(n)
       } else if (d.toDateString() === yesterday.toDateString()) {
@@ -145,10 +195,103 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
         </div>
       </Link>
 
-      <label className="search-box" htmlFor="dashboard-search">
-        <span>🔎</span>
-        <input id="dashboard-search" type="text" placeholder="Search trips or places" />
-      </label>
+      <div style={{ position: 'relative', flex: 1, minWidth: '220px' }} ref={searchRef}>
+        <label className="search-box" htmlFor="dashboard-search" style={{ width: '100%' }}>
+          <span>🔎</span>
+          <input
+            id="dashboard-search"
+            type="text"
+            placeholder="Search trips or places"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => { if (searchQuery.trim()) setShowSearchDropdown(true) }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setShowSearchDropdown(false)
+            }}
+          />
+        </label>
+
+        {showSearchDropdown && searchQuery.trim() && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 8px)',
+              left: 0,
+              right: 0,
+              background: 'var(--surface, #ffffff)',
+              color: 'var(--text, #1c1917)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              boxShadow: 'var(--shadow, 0 10px 30px rgba(0,0,0,0.15))',
+              zIndex: 2000,
+              maxHeight: '360px',
+              overflowY: 'auto',
+              padding: '8px 0'
+            }}
+          >
+            <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--paragraph)', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>
+              Trips
+            </div>
+            {isSearching ? (
+              <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--paragraph)' }}>
+                Searching...
+              </div>
+            ) : searchError ? (
+              <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.88rem', color: '#ef4444' }}>
+                {searchError}
+              </div>
+            ) : searchList.length === 0 ? (
+              <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--paragraph)' }}>
+                No trips found.
+              </div>
+            ) : (
+              searchList.map((trip) => {
+                if (!trip) return null
+                const title = trip.title || trip.destination || 'Trip'
+                const dest = trip.destination ? `📍 ${trip.destination}` : ''
+                const startDateStr = trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+                const endDateStr = trip.endDate ? new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
+                const dateRangeStr = startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr
+
+                return (
+                  <div
+                    key={trip.id || title}
+                    onClick={() => {
+                      setShowSearchDropdown(false)
+                      setSearchQuery('')
+                      if (trip.id) navigate(`/trips/${trip.id}`)
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--surface-strong, rgba(0,0,0,0.04))'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                    }}
+                  >
+                    <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--text)' }}>
+                      {title}
+                    </strong>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--paragraph)' }}>{dest}</span>
+                      {dateRangeStr && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--paragraph)', opacity: 0.8 }}>
+                          {dateRangeStr}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="navbar-actions">
         <button
@@ -193,15 +336,15 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
             <div className="notifications-dropdown">
               <div className="notifications-header">
                 <h3>Notifications</h3>
-                {notifications.some(n => !n.isRead) && (
+                {notifList.some((n) => n && !n.isRead) && (
                   <button onClick={handleMarkAllAsRead}>Mark all as read</button>
                 )}
               </div>
 
-              {invitations.length > 0 && (
+              {invList.length > 0 && (
                 <div className="notifications-list">
                   <div className="notifications-section-title">Invitations</div>
-                  {invitations.map((inv) => (
+                  {invList.map((inv) => (
                     <div key={inv.id} className="notification-dropdown-item unread">
                       <div className="notification-icon-wrapper">✉</div>
                       <div className="notification-content">
@@ -228,12 +371,12 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
                 </div>
               )}
 
-              {notifications.length === 0 && invitations.length === 0 ? (
+              {notifList.length === 0 && invList.length === 0 ? (
                 <div className="notifications-empty">No new notifications</div>
               ) : (
                 <div className="notifications-list">
                   {Object.keys(grouped).map((groupName) => {
-                    const items = grouped[groupName]
+                    const items = grouped[groupName] || []
                     if (items.length === 0) return null
 
                     return (
@@ -250,7 +393,7 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
                               <p className="notification-item-title">{n.title}</p>
                               <p className="notification-item-msg">{n.message}</p>
                               <span className="notification-item-time">
-                                {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                               </span>
                             </div>
                           </div>

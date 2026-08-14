@@ -41,6 +41,11 @@ public class TripController {
         return ResponseEntity.ok(tripService.getAllTrips());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<TripResponse>> searchTrips(@org.springframework.web.bind.annotation.RequestParam("query") String query) {
+        return ResponseEntity.ok(tripService.searchTrips(query));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TripResponse> getTripById(@PathVariable Long id) {
         return ResponseEntity.ok(tripService.getTripById(id));

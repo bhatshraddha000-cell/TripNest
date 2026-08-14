@@ -151,6 +151,29 @@ public class TripService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<TripResponse> searchTrips(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        String cleanQuery = query.trim().toLowerCase();
+        User user = getAuthenticatedUser();
+        List<TripMember> memberships = tripMemberRepository.findByUser(user);
+        return memberships.stream()
+                .filter(m -> {
+                    Trip t = m.getTrip();
+                    return (t.getTitle() != null && t.getTitle().toLowerCase().contains(cleanQuery))
+                        || (t.getDestination() != null && t.getDestination().toLowerCase().contains(cleanQuery))
+                        || (t.getStatus() != null && t.getStatus().name().toLowerCase().contains(cleanQuery));
+                })
+                .map(m -> {
+                    TripResponse resp = mapToResponse(m.getTrip());
+                    resp.setTripRole(m.getTripRole().name());
+                    return resp;
+                })
+                .toList();
+    }
+
     @Transactional
     public TripResponse getTripById(Long id) {
         User user = getAuthenticatedUser();

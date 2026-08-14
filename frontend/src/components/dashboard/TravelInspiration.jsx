@@ -44,9 +44,13 @@ function TravelInspiration() {
 
         // Combine user destinations first, then fill remainder from popular
         const combinedMap = new Map()
-        myDests.forEach((d) => combinedMap.set(d.name.toLowerCase(), d))
+        myDests.forEach((d) => {
+          if (d && d.name) {
+            combinedMap.set(d.name.toLowerCase(), d)
+          }
+        })
         popularFormatted.forEach((p) => {
-          if (!combinedMap.has(p.name.toLowerCase())) {
+          if (p && p.name && !combinedMap.has(p.name.toLowerCase())) {
             combinedMap.set(p.name.toLowerCase(), p)
           }
         })

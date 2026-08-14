@@ -37,10 +37,11 @@ function QuickActions() {
       try {
         setLoading(true)
         const trips = await tripApi.getAllTrips()
-        setUserTrips(trips || [])
+        const tripList = Array.isArray(trips) ? trips : []
+        setUserTrips(tripList)
 
-        if (trips.length === 1) {
-          const tripId = trips[0].id
+        if (tripList.length === 1) {
+          const tripId = tripList[0].id
           if (actionType === 'expense') {
             navigate(`/trips/${tripId}?tab=expenses`)
           } else {

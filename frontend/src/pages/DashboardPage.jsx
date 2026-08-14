@@ -133,27 +133,27 @@ function DashboardPage() {
     { label: 'Total Expenses', value: loading ? '...' : formatCurrency(totalExpensesValue), icon: '🛍' },
   ]
 
-  const upcomingTrips = (dashboardData?.upcomingTrips || []).map((trip) => ({
+  const upcomingTrips = (Array.isArray(dashboardData?.upcomingTrips) ? dashboardData.upcomingTrips : []).map((trip) => ({
     id: trip.id,
-    destination: trip.destination || trip.title,
+    destination: trip.destination || trip.title || 'Trip',
     startDate: trip.startDate,
     endDate: trip.endDate,
     status: trip.status || 'Planning',
     imageLabel: '🏝',
   }))
 
-  const activities = (dashboardData?.recentActivities || []).map((act) => ({
+  const activities = (Array.isArray(dashboardData?.recentActivities) ? dashboardData.recentActivities : []).map((act) => ({
     id: act.id,
-    title: act.title,
-    description: act.description,
+    title: act.title || 'Activity',
+    description: act.description || '',
     time: formatRelativeTime(act.createdAt),
   }))
 
-  const notifications = (dashboardData?.notifications || []).map((n) => ({
+  const notifications = (Array.isArray(dashboardData?.notifications) ? dashboardData.notifications : []).map((n) => ({
     id: n.id,
     icon: getNotificationIcon(n.type),
-    title: n.title,
-    message: n.message,
+    title: n.title || 'Notification',
+    message: n.message || '',
     time: formatRelativeTime(n.createdAt),
   }))
 
