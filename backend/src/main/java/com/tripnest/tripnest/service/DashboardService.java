@@ -102,6 +102,49 @@ public class DashboardService {
         double remainingBudget = totalBudget - totalExpenses;
         double budgetPercentage = totalBudget > 0 ? (totalExpenses / totalBudget) * 100.0 : 0.0;
 
+        // Determine currently traveling trip: startDate <= today <= endDate
+        List<Trip> activeTrips = allTrips.stream()
+                .filter(t -> t.getStartDate() != null && t.getEndDate() != null)
+                .filter(t -> !t.getStartDate().isAfter(today) && !t.getEndDate().isBefore(today))
+                .filter(t -> t.getStatus() != TripStatus.CANCELLED)
+                .sorted(Comparator.comparing(Trip::getStartDate).reversed()
+                        .thenComparing(Comparator.comparing(Trip::getId).reversed()))
+                .toList();
+
+        Trip currentTrip = activeTrips.isEmpty() ? null : activeTrips.get(0);
+
+        DashboardResponse.DashboardBudgetSummary budgetSummary;
+
+        if (currentTrip != null) {
+            double currentTripBudget = currentTrip.getBudget() != null ? currentTrip.getBudget() : 0.0;
+            double currentTripSpent = expenses.stream()
+                    .filter(e -> e.getTrip() != null && e.getTrip().getId().equals(currentTrip.getId()))
+                    .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
+                    .sum();
+            double currentTripRemaining = currentTripBudget - currentTripSpent;
+            double currentTripPercentage = currentTripBudget > 0 ? (currentTripSpent / currentTripBudget) * 100.0 : 0.0;
+
+            budgetSummary = DashboardResponse.DashboardBudgetSummary.builder()
+                    .mode("CURRENT_TRIP")
+                    .tripId(currentTrip.getId())
+                    .destination(currentTrip.getDestination())
+                    .totalBudget(currentTripBudget)
+                    .spent(currentTripSpent)
+                    .remaining(currentTripRemaining)
+                    .spentPercentage(currentTripPercentage)
+                    .build();
+        } else {
+            budgetSummary = DashboardResponse.DashboardBudgetSummary.builder()
+                    .mode("ALL_TRIPS")
+                    .tripId(null)
+                    .destination(null)
+                    .totalBudget(totalBudget)
+                    .spent(totalExpenses)
+                    .remaining(remainingBudget)
+                    .spentPercentage(budgetPercentage)
+                    .build();
+        }
+
         List<TripResponse> upcomingTrips = allTrips.stream()
                 .filter(t -> t.getStartDate() != null && !t.getStartDate().isBefore(today))
                 .filter(t -> t.getStatus() != TripStatus.COMPLETED && t.getStatus() != TripStatus.CANCELLED)
@@ -132,6 +175,7 @@ public class DashboardService {
                 .totalExpenses(totalExpenses)
                 .remainingBudget(remainingBudget)
                 .budgetPercentage(budgetPercentage)
+                .budgetSummary(budgetSummary)
                 .upcomingTrips(upcomingTrips)
                 .recentActivities(recentActivities)
                 .notifications(notifications)

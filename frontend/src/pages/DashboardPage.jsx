@@ -183,10 +183,13 @@ function DashboardPage() {
             <div className="dashboard-grid-section">
               <UpcomingTrips trips={upcomingTrips} />
               <BudgetSummary
-                totalBudget={dashboardData?.totalBudget ?? 0}
-                spent={dashboardData?.totalExpenses ?? 0}
-                remaining={dashboardData?.remainingBudget ?? 0}
-                progress={dashboardData?.budgetPercentage ?? 0}
+                mode={dashboardData?.budgetSummary?.mode}
+                destination={dashboardData?.budgetSummary?.destination}
+                totalBudget={dashboardData?.budgetSummary?.totalBudget ?? dashboardData?.totalBudget ?? 0}
+                spent={dashboardData?.budgetSummary?.spent ?? dashboardData?.totalExpenses ?? 0}
+                remaining={dashboardData?.budgetSummary?.remaining ?? dashboardData?.remainingBudget ?? 0}
+                progress={dashboardData?.budgetSummary?.spentPercentage ?? dashboardData?.budgetPercentage ?? 0}
+                loading={loading}
               />
             </div>
 
