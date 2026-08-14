@@ -2415,8 +2415,16 @@ body {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  background: #eef7fb;
+  background: var(--surface-strong, #eef7fb);
+  color: var(--text);
   font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+:root[data-theme='dark'] .stat-icon {
+  background: var(--surface-strong, #272422);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .stat-card p {
