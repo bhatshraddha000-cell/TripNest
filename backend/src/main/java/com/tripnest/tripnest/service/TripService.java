@@ -44,6 +44,7 @@ public class TripService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseSplitRepository expenseSplitRepository;
     private final DocumentRepository documentRepository;
+    private final com.tripnest.tripnest.repository.TripChatMessageRepository tripChatMessageRepository;
 
 
     private User getAuthenticatedUser() {
@@ -217,6 +218,7 @@ public class TripService {
         tripMemberRepository.deleteByTripId(tripId);
         tripInvitationRepository.deleteByTripId(tripId);
         documentRepository.deleteByTripId(tripId);
+        tripChatMessageRepository.deleteByTripId(tripId);
 
         tripRepository.delete(trip);
         activityLogService.logActivity(user, "TRIP", tripId, "DELETED", "Trip Deleted", "Deleted trip \"" + tripTitle + "\"");

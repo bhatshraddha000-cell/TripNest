@@ -125,6 +125,7 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
   const getIcon = (type) => {
     switch (type) {
       case 'TRIP_INVITATION': return '✉'
+      case 'INVITATION_REJECTED': return '❌'
       case 'MEMBER_JOINED': return '👥'
       case 'MEMBER_REMOVED': return '🚫'
       case 'EXPENSE_ADDED': return '💰'

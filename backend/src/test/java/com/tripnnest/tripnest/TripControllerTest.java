@@ -114,6 +114,9 @@ public class TripControllerTest {
     private NotificationRepository notificationRepository;
 
     @Autowired
+    private com.tripnest.tripnest.repository.TripChatMessageRepository tripChatMessageRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -134,6 +137,7 @@ public class TripControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
         restTemplate = new RestTemplate();
+        tripChatMessageRepository.deleteAll();
         expenseSplitRepository.deleteAll();
         expenseRepository.deleteAll();
         activityRepository.deleteAll();

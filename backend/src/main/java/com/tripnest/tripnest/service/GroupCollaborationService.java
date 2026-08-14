@@ -202,6 +202,15 @@ public class GroupCollaborationService {
 
         invitation.setStatus(TripInvitationStatus.REJECTED);
         tripInvitationRepository.save(invitation);
+
+        // Notify inviter (sender) that invitation was rejected
+        User inviter = invitation.getSender();
+        if (inviter != null) {
+            String msg = receiver.getFullName() + " rejected your invitation to join " + invitation.getTrip().getTitle() + ".";
+            notificationService.createNotification(inviter, "Trip invitation rejected", msg, "INVITATION_REJECTED");
+        }
+
+        activityLogService.logActivity(receiver, "TRIP", invitation.getTrip().getId(), "INVITATION_REJECTED", "Trip invitation rejected", receiver.getFullName() + " rejected invitation to join " + invitation.getTrip().getTitle());
     }
 
     @Transactional

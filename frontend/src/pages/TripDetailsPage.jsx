@@ -7,6 +7,7 @@ import { tripApi } from '../lib/tripApi.js'
 import MembersTab from '../components/MembersTab.jsx'
 import ExpensesTab from '../components/ExpensesTab.jsx'
 import DocumentsTab from '../components/DocumentsTab.jsx'
+import ChatTab from '../components/ChatTab.jsx'
 
 function TripDetailsPage() {
   const { id } = useParams()
@@ -92,6 +93,7 @@ function TripDetailsPage() {
                   <button className={`tab-btn ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')}>Expenses</button>
                   <button className={`tab-btn ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>Documents</button>
                   <button className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+                  <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>Chat</button>
                 </div>
 
                 {activeTab === 'overview' && (
@@ -116,6 +118,16 @@ function TripDetailsPage() {
 
                 {activeTab === 'members' && (
                   <MembersTab tripId={trip.id} tripRole={trip.tripRole} maxCapacity={trip.travelers} />
+                )}
+
+                {activeTab === 'chat' && (
+                  <ChatTab
+                    tripId={trip.id}
+                    currentUserId={user?.id ?? user?.userId}
+                    tripTitle={trip.title}
+                    destination={trip.destination}
+                    memberCount={trip.travelers}
+                  />
                 )}
               </>}
             </section>
