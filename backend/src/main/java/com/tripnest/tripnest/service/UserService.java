@@ -81,6 +81,30 @@ public class UserService {
 
     @Transactional
     public UserProfileResponse uploadProfilePhoto(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Please select an image file to upload.");
+        }
+
+        String contentType = file.getContentType();
+        String originalFilename = file.getOriginalFilename();
+        String lowerName = originalFilename != null ? originalFilename.toLowerCase() : "";
+
+        boolean isValidExtension = lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")
+                || lowerName.endsWith(".png") || lowerName.endsWith(".webp");
+        boolean isValidMime = contentType != null && (
+                contentType.equalsIgnoreCase("image/jpeg") ||
+                contentType.equalsIgnoreCase("image/png") ||
+                contentType.equalsIgnoreCase("image/webp")
+        );
+
+        if (!isValidExtension && !isValidMime) {
+            throw new IllegalArgumentException("Invalid file format. Only JPG, PNG, and WEBP image files are allowed.");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size exceeds maximum allowed limit of 5MB.");
+        }
+
         User user = getAuthenticatedUser();
 
         if (user.getProfileImage() != null) {

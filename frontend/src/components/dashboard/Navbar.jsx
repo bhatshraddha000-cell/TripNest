@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
-import { notificationApi } from '../../lib/notificationApi.js'
+import { getProfileImageUrl } from '../../lib/api.js'
 import { collaborationApi } from '../../lib/collaborationApi.js'
+import { notificationApi } from '../../lib/notificationApi.js'
 
-function Navbar({ userName, userEmail, onLogout }) {
+function Navbar({ userName, userEmail, onLogout, profileImage }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const profileUrl = getProfileImageUrl(profileImage || user?.profileImage)
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [invitations, setInvitations] = useState([])
@@ -260,7 +264,13 @@ function Navbar({ userName, userEmail, onLogout }) {
         </div>
 
         <div className="profile-chip">
-          <div className="avatar-badge">{initials}</div>
+          <div className="avatar-badge" style={{ overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
+            {profileUrl ? (
+              <img src={profileUrl} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            ) : (
+              initials
+            )}
+          </div>
           <div>
             <strong>{userName}</strong>
             <span>{userEmail}</span>

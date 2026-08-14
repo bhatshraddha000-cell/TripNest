@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import Navbar from '../components/dashboard/Navbar.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import { api } from '../lib/api.js'
+import { api, getProfileImageUrl } from '../lib/api.js'
 
 function ProfilePage() {
   const navigate = useNavigate()
@@ -11,12 +11,17 @@ function ProfilePage() {
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [previewAvatar, setPreviewAvatar] = useState('')
   const [selectedFile, setSelectedFile] = useState(null)
+  const [isPhotoRemoved, setIsPhotoRemoved] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [status, setStatus] = useState({ type: '', message: '' })
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
   const [resetPasswordStatus, setResetPasswordStatus] = useState({ type: '', message: '' })
+
+  const currentPhotoUrl = isPhotoRemoved
+    ? ''
+    : previewAvatar || getProfileImageUrl(user?.profileImage)
 
   const initials = (fullName || user?.fullName || 'Traveler')
     .split(' ')
@@ -93,12 +98,26 @@ function ProfilePage() {
       return
     }
 
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const isValidType = validTypes.includes(file.type.toLowerCase()) || Boolean(file.name.match(/\.(jpg|jpeg|png|webp)$/i))
+
+    if (!isValidType) {
+      setStatus({ type: 'error', message: 'Invalid file format. Please upload a JPG, PNG, or WEBP image.' })
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus({ type: 'error', message: 'File size exceeds maximum limit of 5MB.' })
+      return
+    }
+
     if (previewAvatar?.startsWith('blob:')) {
       URL.revokeObjectURL(previewAvatar)
     }
 
     setPreviewAvatar(URL.createObjectURL(file))
     setSelectedFile(file)
+    setIsPhotoRemoved(false)
     setIsEditing(true)
     setStatus({ type: '', message: '' })
   }
@@ -109,6 +128,7 @@ function ProfilePage() {
     }
     setPreviewAvatar('')
     setSelectedFile(null)
+    setIsPhotoRemoved(true)
     setIsEditing(true)
     setStatus({ type: '', message: '' })
   }
@@ -120,46 +140,60 @@ function ProfilePage() {
     }
     setPreviewAvatar('')
     setSelectedFile(null)
+    setIsPhotoRemoved(false)
     setIsEditing(false)
     setStatus({ type: '', message: '' })
   }
 
   async function handleSaveChanges(event) {
     event.preventDefault()
+    if (saving) return
+
+    if (!fullName || !fullName.trim()) {
+      setStatus({ type: 'error', message: 'Full name cannot be blank.' })
+      return
+    }
+
     setSaving(true)
     setStatus({ type: '', message: '' })
 
     try {
-      let updatedProfile = null
-
-      try {
-        const response = await api.put('/api/users/me', {
-          fullName: fullName.trim(),
-        })
-        updatedProfile = response.data
-      } catch (error) {
-        if (error.response?.status !== 404 && error.response?.status !== 405) {
-          throw error
-        }
-      }
-
-      const nextUser = updatedProfile ?? {
-        ...(user ?? {}),
-        fullName: fullName.trim(),
-      }
-
-      updateUser(nextUser)
-      setIsEditing(false)
-      setStatus({ type: 'success', message: 'Profile updated successfully.' })
+      let updatedProfileResponse = null
 
       if (selectedFile) {
-        setStatus({
-          type: 'success',
-          message: 'Profile image preview updated locally.',
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+        const photoRes = await api.post('/api/users/me/photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         })
+        updatedProfileResponse = photoRes.data
+      } else if (isPhotoRemoved && user?.profileImage) {
+        const photoRes = await api.delete('/api/users/me/photo')
+        updatedProfileResponse = photoRes.data
       }
+
+      const trimmedName = fullName.trim()
+      if (trimmedName !== user?.fullName || !updatedProfileResponse) {
+        const nameRes = await api.put('/api/users/me', {
+          fullName: trimmedName,
+        })
+        updatedProfileResponse = nameRes.data
+      }
+
+      if (updatedProfileResponse) {
+        updateUser(updatedProfileResponse)
+      }
+
+      if (previewAvatar?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewAvatar)
+      }
+      setPreviewAvatar('')
+      setSelectedFile(null)
+      setIsPhotoRemoved(false)
+      setIsEditing(false)
+      setStatus({ type: 'success', message: 'Profile updated successfully.' })
     } catch (error) {
-      const message = error?.response?.data?.message ?? 'Unable to save your profile right now.'
+      const message = error?.response?.data?.message ?? error?.message ?? 'Unable to save your profile right now.'
       setStatus({ type: 'error', message })
     } finally {
       setSaving(false)
@@ -204,14 +238,14 @@ function ProfilePage() {
                 <div className="profile-card profile-overview">
                   <div className="profile-avatar-wrap">
                     <div className="profile-avatar" aria-hidden="true">
-                      {previewAvatar ? (
-                        <img src={previewAvatar} alt="Profile preview" />
+                      {currentPhotoUrl ? (
+                        <img src={currentPhotoUrl} alt="Profile photo" />
                       ) : (
                         <span>{initials || 'TN'}</span>
                       )}
                     </div>
 
-                    {!previewAvatar ? (
+                    {!currentPhotoUrl ? (
                       <label className="secondary-button profile-upload" htmlFor="avatar-upload">
                         Upload Photo
                       </label>
@@ -224,7 +258,7 @@ function ProfilePage() {
                     <input
                       id="avatar-upload"
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleAvatarChange}
                       style={{ display: 'none' }}
                     />
@@ -250,53 +284,55 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="profile-card profile-editor">
-                  <form className="profile-form" onSubmit={handleSaveChanges}>
-                    <div className="profile-form-grid">
-                      <div className="field-group">
-                        <label htmlFor="fullName">Full Name</label>
-                        <input id="fullName" name="fullName" type="text" value={fullName} onChange={handleProfileChange} />
+                <div className="profile-right-column" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="profile-card profile-editor">
+                    <form className="profile-form" onSubmit={handleSaveChanges}>
+                      <div className="profile-form-grid">
+                        <div className="field-group">
+                          <label htmlFor="fullName">Full Name</label>
+                          <input id="fullName" name="fullName" type="text" value={fullName} onChange={handleProfileChange} />
+                        </div>
+
+                        <div className="field-group">
+                          <label htmlFor="email">Email Address</label>
+                          <input id="email" name="email" type="email" value={user?.email ?? ''} readOnly disabled />
+                        </div>
                       </div>
 
-                      <div className="field-group">
-                        <label htmlFor="email">Email Address</label>
-                        <input id="email" name="email" type="email" value={user?.email ?? ''} readOnly disabled />
+                      {status.message ? <p className={`status-message ${status.type}`}>{status.message}</p> : null}
+
+                      <div className="profile-actions">
+                        <button className="primary-button" type="submit" disabled={saving || !isEditing}>
+                          {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button className="secondary-button" type="button" onClick={resetProfileForm} disabled={saving}>
+                          Cancel
+                        </button>
                       </div>
+                    </form>
+                  </div>
+
+                  <div className="profile-card profile-security" style={{ marginTop: 0 }}>
+                    <div className="security-header">
+                      <h3>🔒 Password & Security</h3>
+                      <p>Send an OTP code to your registered email address to reset your password.</p>
                     </div>
 
-                    {status.message ? <p className={`status-message ${status.type}`}>{status.message}</p> : null}
+                    {resetPasswordStatus.message ? (
+                      <p className={`status-message ${resetPasswordStatus.type}`}>{resetPasswordStatus.message}</p>
+                    ) : null}
 
-                    <div className="profile-actions">
-                      <button className="primary-button" type="submit" disabled={saving || !isEditing}>
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                      <button className="secondary-button" type="button" onClick={resetProfileForm} disabled={saving}>
-                        Cancel
+                    <div className="security-actions">
+                      <button
+                        className="primary-button security-btn"
+                        type="button"
+                        onClick={handleResetPassword}
+                        disabled={resetPasswordLoading}
+                      >
+                        {resetPasswordLoading ? 'Sending OTP...' : 'Change Password'}
                       </button>
                     </div>
-                  </form>
-                </div>
-              </div>
-
-              <div className="profile-card profile-security">
-                <div className="security-header">
-                  <h3>🔒 Password & Security</h3>
-                  <p>Send an OTP code to your registered email address to reset your password.</p>
-                </div>
-
-                {resetPasswordStatus.message ? (
-                  <p className={`status-message ${resetPasswordStatus.type}`}>{resetPasswordStatus.message}</p>
-                ) : null}
-
-                <div className="security-actions">
-                  <button
-                    className="primary-button security-btn"
-                    type="button"
-                    onClick={handleResetPassword}
-                    disabled={resetPasswordLoading}
-                  >
-                    {resetPasswordLoading ? 'Sending OTP...' : 'Change Password'}
-                  </button>
+                  </div>
                 </div>
               </div>
             </section>
