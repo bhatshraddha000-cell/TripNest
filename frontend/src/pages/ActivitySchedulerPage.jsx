@@ -6,14 +6,15 @@ import ActivitySchedulePanel from '../components/itinerary/ActivitySchedulePanel
 import { useAuth } from '../context/AuthContext.jsx'
 import { tripApi } from '../lib/tripApi.js'
 import { itineraryApi } from '../lib/itineraryApi.js'
+import { activityApi } from '../lib/activityApi.js'
 
 function ActivitySchedulerPage() {
   const { itineraryId } = useParams()
   const { user, logout, authLoading, isAuthenticated } = useAuth()
 
-  const [trips, setTrips] = useState([])
+  const [tripsData, setTripsData] = useState([])
   const [selectedTrip, setSelectedTrip] = useState(null)
-  const [tripItineraries, setTripItineraries] = useState([])
+  const [tripItinerariesWithActivities, setTripItinerariesWithActivities] = useState([])
 
   const [detailEntry, setDetailEntry] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,15 @@ function ActivitySchedulerPage() {
     }
   }
 
+  const formatTimeStr = (value) => {
+    if (!value) return 'Flexible time'
+    try {
+      return new Date(`2000-01-01T${value}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    } catch (e) {
+      return value
+    }
+  }
+
   const loadData = useCallback(async () => {
     if (!isAuthenticated) return
     try {
@@ -37,7 +47,7 @@ function ActivitySchedulerPage() {
       setError('')
 
       if (itineraryId) {
-        // Direct detail link or day selected
+        // Direct detail link
         const allTrips = await tripApi.getAllTrips()
         let matched = null
         for (const t of allTrips) {
@@ -54,9 +64,28 @@ function ActivitySchedulerPage() {
           setDetailEntry(matched)
         }
       } else {
-        // Landing page: fetch all user trips
+        // Landing page: fetch user trips with activity stats
         const allTrips = await tripApi.getAllTrips()
-        setTrips(allTrips || [])
+        const enrichedTrips = await Promise.all(
+          (allTrips || []).map(async (t) => {
+            try {
+              const itins = await itineraryApi.getAllItineraries(t.id)
+              let totalActs = 0
+              for (const itin of itins || []) {
+                try {
+                  const acts = await activityApi.getAllActivities(t.id, itin.id)
+                  totalActs += (acts || []).length
+                } catch (e) {
+                  // ignore
+                }
+              }
+              return { trip: t, itineraryCount: (itins || []).length, totalActivities: totalActs }
+            } catch (e) {
+              return { trip: t, itineraryCount: 0, totalActivities: 0 }
+            }
+          })
+        )
+        setTripsData(enrichedTrips)
       }
     } catch (err) {
       setError(err?.response?.data?.message ?? 'Failed to load activity scheduling details.')
@@ -69,13 +98,29 @@ function ActivitySchedulerPage() {
     loadData()
   }, [loadData])
 
-  const handleSelectTrip = async (trip) => {
+  const handleSelectTrip = async (tripItem) => {
     try {
       setLoading(true)
       setError('')
-      setSelectedTrip(trip)
-      const itins = await itineraryApi.getAllItineraries(trip.id)
-      setTripItineraries(itins || [])
+      setSelectedTrip(tripItem)
+
+      const itins = await itineraryApi.getAllItineraries(tripItem.id)
+      const enrichedDays = await Promise.all(
+        (itins || []).map(async (itin) => {
+          try {
+            const acts = await activityApi.getAllActivities(tripItem.id, itin.id)
+            const sorted = [...(acts || [])].sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'))
+            return {
+              itinerary: itin,
+              activities: sorted,
+              firstActivityTime: sorted.length > 0 && sorted[0].startTime ? sorted[0].startTime : null
+            }
+          } catch (e) {
+            return { itinerary: itin, activities: [], firstActivityTime: null }
+          }
+        })
+      )
+      setTripItinerariesWithActivities(enrichedDays)
     } catch (err) {
       setError('Failed to load itinerary days for this trip.')
     } finally {
@@ -111,14 +156,14 @@ function ActivitySchedulerPage() {
               ) : !itineraryId ? (
                 /* LANDING & DAY SELECTION */
                 !selectedTrip ? (
-                  /* LEVEL 1: TRIP SELECTION */
+                  /* LEVEL 1: TRIP SELECTION FOR SCHEDULING */
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                       <div>
-                        <p className="eyebrow">Planner</p>
-                        <h2 style={{ margin: '4px 0 0 0' }}>Activity Scheduling</h2>
+                        <p className="eyebrow">SCHEDULER</p>
+                        <h2 style={{ margin: '4px 0 0 0' }}>Activity Scheduler</h2>
                         <p style={{ color: 'var(--paragraph)', margin: '4px 0 0 0', fontSize: '0.92rem' }}>
-                          Choose a trip to schedule activities.
+                          Organize every activity, place, and time of your journey.
                         </p>
                       </div>
                       <Link to="/trips/new" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
@@ -126,7 +171,7 @@ function ActivitySchedulerPage() {
                       </Link>
                     </div>
 
-                    {trips.length === 0 ? (
+                    {tripsData.length === 0 ? (
                       <div style={{
                         textAlign: 'center',
                         padding: '60px 20px',
@@ -146,12 +191,15 @@ function ActivitySchedulerPage() {
                     ) : (
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
                         gap: '20px',
                         marginTop: '16px'
                       }}>
-                        {trips.map((item) => {
+                        {tripsData.map(({ trip: item, itineraryCount, totalActivities }) => {
                           const statusStyle = getStatusColor(item.status)
+                          const start = new Date(item.startDate)
+                          const end = new Date(item.endDate)
+
                           return (
                             <div
                               key={item.id}
@@ -159,14 +207,17 @@ function ActivitySchedulerPage() {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 justifyContent: 'space-between',
-                                padding: '20px',
-                                borderRadius: '16px',
+                                padding: '22px',
+                                borderRadius: '18px',
                                 border: '1px solid var(--border)',
                                 backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.03))'
                               }}
                             >
                               <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                  <span className="schedule-time-pill">
+                                    ⏱ SCHEDULE
+                                  </span>
                                   <span style={{
                                     padding: '4px 10px',
                                     borderRadius: '20px',
@@ -178,38 +229,53 @@ function ActivitySchedulerPage() {
                                   }}>
                                     {(item.status || 'PLANNING').toLowerCase()}
                                   </span>
-                                  <span style={{ color: 'var(--paragraph)', fontSize: '0.85rem' }}>
-                                    👥 {item.travelers ?? 1} {item.travelers === 1 ? 'traveler' : 'travelers'}
-                                  </span>
                                 </div>
 
-                                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'var(--text)' }}>{item.title}</h3>
-                                <p style={{ color: 'var(--paragraph)', fontSize: '0.9rem', margin: '0 0 16px 0' }}>📍 {item.destination}</p>
-                              </div>
+                                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', color: 'var(--text)' }}>
+                                  {item.title}
+                                </h3>
+                                <p style={{ color: 'var(--paragraph)', fontSize: '0.9rem', margin: '0 0 16px 0' }}>
+                                  📍 {item.destination} · {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
 
-                              <div style={{
-                                borderTop: '1px solid var(--border)',
-                                paddingTop: '16px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '16px'
-                              }}>
-                                <div>
-                                  <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--paragraph)' }}>DATES</span>
-                                  <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>
-                                    {new Date(item.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                  </span>
+                                <div style={{
+                                  padding: '12px 14px',
+                                  borderRadius: '12px',
+                                  background: 'var(--surface-strong, rgba(0,0,0,0.04))',
+                                  border: '1px solid var(--border)',
+                                  display: 'flex',
+                                  justifyContent: 'space-around',
+                                  alignItems: 'center',
+                                  textAlign: 'center',
+                                  margin: '12px 0 16px 0'
+                                }}>
+                                  <div>
+                                    <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent, #cd7b2f)' }}>
+                                      {totalActivities}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--paragraph)', textTransform: 'uppercase', fontWeight: 600 }}>
+                                      Activities
+                                    </span>
+                                  </div>
+                                  <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+                                  <div>
+                                    <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)' }}>
+                                      {itineraryCount}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--paragraph)', textTransform: 'uppercase', fontWeight: 600 }}>
+                                      Days
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
                               <button
                                 type="button"
                                 className="primary-button"
-                                style={{ width: '100%', fontSize: '0.9rem' }}
+                                style={{ width: '100%', fontSize: '0.9rem', marginTop: '8px' }}
                                 onClick={() => handleSelectTrip(item)}
                               >
-                                Schedule Activities
+                                Open Schedule
                               </button>
                             </div>
                           )
@@ -218,7 +284,7 @@ function ActivitySchedulerPage() {
                     )}
                   </>
                 ) : (
-                  /* LEVEL 2: ITINERARY DAY SELECTION FOR SELECTED TRIP */
+                  /* LEVEL 2: ITINERARY DAY SELECTION FOR SCHEDULING */
                   <>
                     <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
                       <p className="eyebrow" style={{ marginBottom: '4px' }}>
@@ -232,11 +298,11 @@ function ActivitySchedulerPage() {
                       </p>
                       <h2 style={{ margin: '4px 0 0 0', color: 'var(--text)' }}>{selectedTrip.title}</h2>
                       <p style={{ color: 'var(--paragraph)', margin: '4px 0 0 0', fontSize: '0.92rem' }}>
-                        📍 {selectedTrip.destination} — Select an itinerary day to schedule activities.
+                        📍 {selectedTrip.destination} — Select a day to view and schedule activities.
                       </p>
                     </div>
 
-                    {tripItineraries.length === 0 ? (
+                    {tripItinerariesWithActivities.length === 0 ? (
                       <div style={{
                         textAlign: 'center',
                         padding: '60px 20px',
@@ -247,7 +313,7 @@ function ActivitySchedulerPage() {
                         <span style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>🗓️</span>
                         <h3>No itinerary days available for this trip</h3>
                         <p style={{ color: 'var(--paragraph)', maxWidth: '400px', margin: '8px auto 24px auto', fontSize: '0.95rem' }}>
-                          Create an itinerary day for {selectedTrip.title} to start scheduling activities!
+                          Create an itinerary day for {selectedTrip.title} first to start scheduling activities!
                         </p>
                         <Link to={`/itinerary/${selectedTrip.id}`} className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
                           Create Itinerary Day
@@ -256,16 +322,16 @@ function ActivitySchedulerPage() {
                     ) : (
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                        gap: '16px',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+                        gap: '18px',
                         marginTop: '16px'
                       }}>
-                        {tripItineraries.map((itin) => (
+                        {tripItinerariesWithActivities.map(({ itinerary: itin, activities, firstActivityTime }) => (
                           <div
                             key={itin.id}
                             style={{
-                              padding: '20px',
-                              borderRadius: '16px',
+                              padding: '22px',
+                              borderRadius: '18px',
                               border: '1px solid var(--border)',
                               backgroundColor: 'var(--surface-strong, rgba(255, 255, 255, 0.03))',
                               display: 'flex',
@@ -274,30 +340,35 @@ function ActivitySchedulerPage() {
                             }}
                           >
                             <div>
-                              <span style={{
-                                fontSize: '0.78rem',
-                                fontWeight: 'bold',
-                                color: 'var(--accent, #cd7b2f)',
-                                textTransform: 'uppercase',
-                                display: 'block',
-                                marginBottom: '4px'
-                              }}>
-                                Day {itin.dayNumber}
-                              </span>
-                              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: 'var(--text)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <span className="schedule-time-pill">
+                                  🕘 DAY {itin.dayNumber}
+                                </span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent, #cd7b2f)' }}>
+                                  {activities.length} {activities.length === 1 ? 'Activity' : 'Activities'}
+                                </span>
+                              </div>
+
+                              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: 'var(--text)' }}>
                                 {itin.title}
                               </h3>
-                              <p style={{ color: 'var(--paragraph)', fontSize: '0.85rem', margin: '0 0 16px 0' }}>
+                              <p style={{ color: 'var(--paragraph)', fontSize: '0.85rem', margin: '0 0 12px 0' }}>
                                 📅 {itin.date ? new Date(itin.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
                               </p>
+
+                              {firstActivityTime && (
+                                <p style={{ fontSize: '0.8rem', color: 'var(--paragraph)', margin: '0 0 16px 0', opacity: 0.9 }}>
+                                  ⏱ First activity: <strong>{formatTimeStr(firstActivityTime)}</strong>
+                                </p>
+                              )}
                             </div>
 
                             <Link
                               to={`/activity-scheduler/${itin.id}`}
                               className="primary-button"
-                              style={{ textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: '0.88rem' }}
+                              style={{ textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: '0.88rem', marginTop: '12px' }}
                             >
-                              Manage Activities
+                              Open Schedule ➔
                             </Link>
                           </div>
                         ))}
@@ -324,7 +395,7 @@ function ActivitySchedulerPage() {
                             ← Back to Activity Scheduling
                           </Link>
                         </p>
-                        <h2 style={{ margin: '4px 0', color: 'var(--text)' }}>{detailEntry.trip.title}</h2>
+                        <h2 style={{ margin: '4px 0', color: 'var(--text)' }}>⏱ {detailEntry.trip.title}</h2>
                         <p style={{ color: 'var(--paragraph)', margin: 0 }}>📍 {detailEntry.trip.destination}</p>
                       </div>
                       <Link to={`/itinerary/${detailEntry.trip.id}`} className="secondary-button" style={{ alignSelf: 'flex-start', textDecoration: 'none' }}>
@@ -333,7 +404,7 @@ function ActivitySchedulerPage() {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px', marginBottom: '28px' }}>
-                      <SchedulerDetail label="DAY" value={`Day ${detailEntry.itinerary.dayNumber}`} />
+                      <SchedulerDetail label="SCHEDULE DAY" value={`Day ${detailEntry.itinerary.dayNumber}`} />
                       <SchedulerDetail label="DAY TITLE" value={detailEntry.itinerary.title} />
                       <SchedulerDetail label="DATE" value={detailEntry.itinerary.date ? new Date(detailEntry.itinerary.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'} />
                     </div>

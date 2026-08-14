@@ -5,12 +5,13 @@ import Sidebar from '../components/dashboard/Sidebar.jsx'
 import ItineraryManager from '../components/itinerary/ItineraryManager.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { tripApi } from '../lib/tripApi.js'
+import { itineraryApi } from '../lib/itineraryApi.js'
 
 function ItineraryPage() {
   const { tripId } = useParams()
   const { user, logout, authLoading, isAuthenticated } = useAuth()
   const [trip, setTrip] = useState(null)
-  const [trips, setTrips] = useState([])
+  const [tripsWithItineraries, setTripsWithItineraries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -36,12 +37,25 @@ function ItineraryPage() {
         setTrip(fetched)
       } else {
         const allTrips = await tripApi.getAllTrips()
-        setTrips(allTrips || [])
+        // Fetch itinerary counts for journey planning overview
+        const enriched = await Promise.all(
+          (allTrips || []).map(async (t) => {
+            try {
+              const itins = await itineraryApi.getAllItineraries(t.id)
+              return { trip: t, itineraries: itins || [] }
+            } catch (e) {
+              return { trip: t, itineraries: [] }
+            }
+          })
+        )
+        setTripsWithItineraries(enriched)
       }
     } catch (err) {
-      setError(err?.response?.status === 404
-        ? 'The requested trip could not be found or you do not have permission to view it.'
-        : err?.response?.data?.message ?? 'Failed to load trip details.')
+      setError(
+        err?.response?.status === 404
+          ? 'The requested trip could not be found or you do not have permission to view it.'
+          : err?.response?.data?.message ?? 'Failed to load trip details.'
+      )
     } finally {
       setLoading(false)
     }
@@ -77,14 +91,14 @@ function ItineraryPage() {
                   </Link>
                 </div>
               ) : !tripId ? (
-                /* TRIP SELECTION LANDING PAGE */
+                /* JOURNEY PLANNER LANDING PAGE */
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                     <div>
                       <p className="eyebrow">Planner</p>
-                      <h2 style={{ margin: '4px 0 0 0' }}>Itinerary</h2>
+                      <h2 style={{ margin: '4px 0 0 0' }}>Itinerary Planner</h2>
                       <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0', fontSize: '0.92rem' }}>
-                        Choose a trip to plan its day-by-day itinerary.
+                        Plan your journey, one day at a time.
                       </p>
                     </div>
                     <Link to="/trips/new" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
@@ -92,7 +106,7 @@ function ItineraryPage() {
                     </Link>
                   </div>
 
-                  {trips.length === 0 ? (
+                  {tripsWithItineraries.length === 0 ? (
                     <div style={{
                       textAlign: 'center',
                       padding: '60px 20px',
@@ -112,12 +126,18 @@ function ItineraryPage() {
                   ) : (
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
                       gap: '20px',
                       marginTop: '16px'
                     }}>
-                      {trips.map((item) => {
+                      {tripsWithItineraries.map(({ trip: item, itineraries }) => {
                         const statusStyle = getStatusColor(item.status)
+                        const start = new Date(item.startDate)
+                        const end = new Date(item.endDate)
+                        const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1)
+                        const plannedDays = itineraries.length
+                        const progress = Math.min(100, Math.round((plannedDays / totalDays) * 100))
+
                         return (
                           <div
                             key={item.id}
@@ -125,14 +145,17 @@ function ItineraryPage() {
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',
-                              padding: '20px',
-                              borderRadius: '16px',
+                              padding: '22px',
+                              borderRadius: '18px',
                               border: '1px solid var(--border)',
                               backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.03))'
                             }}
                           >
                             <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent, #cd7b2f)', letterSpacing: '0.04em' }}>
+                                  JOURNEY
+                                </span>
                                 <span style={{
                                   padding: '4px 10px',
                                   borderRadius: '20px',
@@ -144,56 +167,48 @@ function ItineraryPage() {
                                 }}>
                                   {(item.status || 'PLANNING').toLowerCase()}
                                 </span>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                  👥 {item.travelers ?? 1} {item.travelers === 1 ? 'traveler' : 'travelers'}
-                                </span>
                               </div>
 
-                              <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'var(--text)' }}>{item.title}</h3>
-                              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 16px 0' }}>📍 {item.destination}</p>
+                              <h3 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', color: 'var(--text)' }}>
+                                🌍 {item.title}
+                              </h3>
+                              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 14px 0' }}>
+                                📍 {item.destination} · {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
 
-                              {item.description && (
-                                <p style={{
-                                  fontSize: '0.88rem',
-                                  color: 'var(--text-secondary)',
-                                  margin: '0 0 16px 0',
-                                  lineHeight: '1.4',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: '2',
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden'
-                                }}>
-                                  {item.description}
-                                </p>
-                              )}
-                            </div>
+                              {/* Journey Progress Bar */}
+                              <div style={{ marginTop: '14px', marginBottom: '14px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 600 }}>
+                                  <span style={{ color: 'var(--text)' }}>Itinerary Progress</span>
+                                  <span style={{ color: 'var(--accent, #cd7b2f)' }}>{plannedDays} / {totalDays} Days Planned ({progress}%)</span>
+                                </div>
+                                <div className="journey-progress-track">
+                                  <div className="journey-progress-fill" style={{ width: `${progress}%` }} />
+                                </div>
 
-                            <div style={{
-                              borderTop: '1px solid var(--border)',
-                              paddingTop: '16px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              marginBottom: '16px'
-                            }}>
-                              <div>
-                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>DATES</span>
-                                <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>
-                                  {new Date(item.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                              </div>
-                              <div style={{ textAlign: 'right' }}>
-                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>BUDGET</span>
-                                <strong style={{ color: '#cd7b2f', fontSize: '1.05rem' }}>₹{(item.budget || 0).toLocaleString('en-IN')}</strong>
+                                {/* Day Chips Preview */}
+                                <div className="journey-day-chips">
+                                  {Array.from({ length: Math.min(totalDays, 5) }).map((_, idx) => {
+                                    const dayNum = idx + 1
+                                    if (dayNum <= plannedDays) {
+                                      return <span key={dayNum} className="journey-day-chip planned">Day {dayNum} ✓</span>
+                                    } else if (dayNum === plannedDays + 1) {
+                                      return <span key={dayNum} className="journey-day-chip next">Day {dayNum} →</span>
+                                    } else {
+                                      return <span key={dayNum} className="journey-day-chip unplanned">Day {dayNum}</span>
+                                    }
+                                  })}
+                                  {totalDays > 5 && <span className="journey-day-chip unplanned">+{totalDays - 5} more</span>}
+                                </div>
                               </div>
                             </div>
 
                             <Link
                               to={`/itinerary/${item.id}`}
                               className="primary-button"
-                              style={{ textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: '0.9rem' }}
+                              style={{ textDecoration: 'none', textAlign: 'center', display: 'block', fontSize: '0.9rem', marginTop: '16px' }}
                             >
-                              Manage Itinerary
+                              {plannedDays === 0 ? 'Start Planning' : 'Plan Itinerary'}
                             </Link>
                           </div>
                         )
@@ -220,7 +235,7 @@ function ItineraryPage() {
                             ← Back to Itineraries
                           </Link>
                         </p>
-                        <h2 style={{ margin: '4px 0', color: 'var(--text)' }}>{trip.title}</h2>
+                        <h2 style={{ margin: '4px 0', color: 'var(--text)' }}>🌍 {trip.title}</h2>
                         <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
                           📍 {trip.destination} · {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>

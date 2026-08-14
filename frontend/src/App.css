@@ -2886,3 +2886,155 @@ body {
   color: #2f7aa3;
   border-bottom-color: #2f7aa3;
 }
+
+/* ==========================================================================
+   ITINERARY & ACTIVITY SCHEDULING REFINED VISUAL STYLES
+   ========================================================================== */
+
+/* Journey Planner Progress Track */
+.journey-progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--surface-strong, rgba(0, 0, 0, 0.08));
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 6px 0;
+}
+
+.journey-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #cd7b2f 0%, #e09f53 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Day Status Chips on Itinerary Landing */
+.journey-day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.journey-day-chip {
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.journey-day-chip.planned {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.journey-day-chip.next {
+  background: rgba(205, 123, 47, 0.14);
+  color: #cd7b2f;
+  border: 1px dashed rgba(205, 123, 47, 0.4);
+}
+
+.journey-day-chip.unplanned {
+  background: rgba(156, 163, 175, 0.12);
+  color: var(--paragraph);
+}
+
+/* Vertical Journey Timeline Visual Connectors */
+.journey-timeline-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-left: 28px;
+}
+
+.journey-timeline-container::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 12px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent, #cd7b2f) 0%, var(--border) 100%);
+  border-radius: 3px;
+}
+
+.journey-step-wrapper {
+  position: relative;
+}
+
+.journey-step-badge {
+  position: absolute;
+  left: -28px;
+  top: 18px;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface, #ffffff);
+  border: 2px solid var(--accent, #cd7b2f);
+  color: var(--accent, #cd7b2f);
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+/* Activity Scheduler Time & Type Badges */
+.schedule-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface-strong, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.activity-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.type-sightseeing {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.type-dining {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+.type-transportation {
+  background: rgba(147, 51, 234, 0.12);
+  color: #9333ea;
+}
+
+.type-accommodation {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.type-adventure {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.type-shopping {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0d9488;
+}
