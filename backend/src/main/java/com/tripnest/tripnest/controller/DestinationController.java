@@ -30,6 +30,11 @@ public class DestinationController {
         return ResponseEntity.ok(destinationService.getMyUpcomingDestinations());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<DestinationSummaryResponse>> searchDestinations(@org.springframework.web.bind.annotation.RequestParam("query") String query) {
+        return ResponseEntity.ok(destinationService.searchDestinations(query));
+    }
+
     @GetMapping("/my-destinations/{tripId}")
     public ResponseEntity<DestinationResponse> getDestinationDetails(@PathVariable Long tripId) {
         return ResponseEntity.ok(destinationService.getDestinationDataByTripId(tripId));

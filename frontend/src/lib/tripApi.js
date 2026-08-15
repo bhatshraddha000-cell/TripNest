@@ -23,5 +23,10 @@ export const tripApi = {
 
   deleteTrip: async (id) => {
     await api.delete(`/api/trips/${id}`)
+  },
+
+  searchTrips: async (query) => {
+    const response = await api.get('/api/trips/search', { params: { query } })
+    return response.data
   }
 }

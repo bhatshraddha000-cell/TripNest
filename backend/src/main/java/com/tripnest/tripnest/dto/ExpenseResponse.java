@@ -2,6 +2,9 @@ package com.tripnest.tripnest.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.tripnest.tripnest.model.SplitType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,5 +28,7 @@ public class ExpenseResponse {
     private Double amount;
     private LocalDate date;
     private String notes;
+    private SplitType splitType;
+    private List<ExpenseSplitResponse> participants;
     private LocalDateTime createdAt;
 }

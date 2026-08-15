@@ -45,6 +45,83 @@ public class EmailService {
         }
     }
 
+    public void sendTripReminderEmail(User user, com.tripnest.tripnest.model.Trip trip) {
+        String subject = "TripNest Reminder — Your trip starts tomorrow!";
+        String htmlContent = buildTripReminderEmail(user.getFullName(), trip);
+
+        log.info("=========================================");
+        log.info("TRIP REMINDER EMAIL GENERATING FOR USER: {}, TRIP: {}", user.getEmail(), trip.getTitle());
+        log.info("=========================================");
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(user.getEmail());
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            log.info("Trip reminder email sent successfully to {} for trip {}", user.getEmail(), trip.getTitle());
+        } catch (Exception exception) {
+            log.error("Failed to send trip reminder email to {} for trip {}: {}",
+                    user.getEmail(), trip.getTitle(), exception.getMessage(), exception);
+            throw new RuntimeException("Failed to send trip reminder email: " + exception.getMessage(), exception);
+        }
+    }
+
+    private String buildTripReminderEmail(String fullName, com.tripnest.tripnest.model.Trip trip) {
+        String budgetStr = trip.getBudget() != null ? String.format("₹%,.2f", trip.getBudget()) : "Not set";
+        return """
+                <!DOCTYPE html>
+                <html>
+                <body style="margin:0;padding:0;background-color:#f6f8fb;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+                    <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="background-color:#f6f8fb;padding:48px 0;">
+                        <tr>
+                            <td align="center">
+                                <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;padding:40px;border:1px solid #e5e7eb;box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);">
+                                    <tr>
+                                        <td>
+                                            <div style="text-align: center; margin-bottom: 24px;">
+                                                <span style="font-size: 28px; font-weight: 800; color: #eb5e28; letter-spacing: -0.5px;">TripNest</span>
+                                            </div>
+                                            <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#111827;text-align:center;">Your Trip Starts Tomorrow!</h1>
+                                            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4b5563;">Hi %s,</p>
+                                            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#4b5563;">
+                                                Just a reminder that your TripNest trip "<strong>%s</strong>" starts tomorrow! Here are your trip details:
+                                            </p>
+                                            <div style="background-color:#f9fafb;padding:20px;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:24px;">
+                                                <p style="margin:4px 0;font-size:14px;"><strong>Destination:</strong> %s</p>
+                                                <p style="margin:4px 0;font-size:14px;"><strong>Start Date:</strong> %s</p>
+                                                <p style="margin:4px 0;font-size:14px;"><strong>End Date:</strong> %s</p>
+                                                <p style="margin:4px 0;font-size:14px;"><strong>Travelers:</strong> %d</p>
+                                                <p style="margin:4px 0;font-size:14px;"><strong>Budget:</strong> %s</p>
+                                            </div>
+                                            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#4b5563;text-align:center;">
+                                                Have a wonderful and safe journey!
+                                            </p>
+                                            <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 24px 0;" />
+                                            <p style="margin:0;font-size:13px;line-height:1.5;color:#9ca3af;text-align:center;">
+                                                — The TripNest Team
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+                """.formatted(
+                        escapeHtml(fullName),
+                        escapeHtml(trip.getTitle()),
+                        escapeHtml(trip.getDestination()),
+                        trip.getStartDate(),
+                        trip.getEndDate(),
+                        trip.getTravelers() != null ? trip.getTravelers() : 1,
+                        escapeHtml(budgetStr)
+                );
+    }
+
     private String buildPasswordResetOtpEmail(String fullName, String otp) {
         return """
                 <!DOCTYPE html>

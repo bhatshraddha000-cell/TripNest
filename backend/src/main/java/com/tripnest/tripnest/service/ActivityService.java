@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tripnest.tripnest.dto.CreateActivityRequest;
 import com.tripnest.tripnest.dto.ActivityResponse;
 import com.tripnest.tripnest.dto.UpdateActivityRequest;
+import com.tripnest.tripnest.exception.ActivityOverlapException;
 import com.tripnest.tripnest.exception.TripNotFoundException;
 import com.tripnest.tripnest.exception.TripValidationException;
 import com.tripnest.tripnest.model.Activity;
@@ -102,6 +103,11 @@ public class ActivityService {
         Itinerary itinerary = getAuthenticatedItinerary(tripId, itineraryId, user);
 
         validateTimes(request.getStartTime(), request.getEndTime());
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (activityRepository.existsOverlappingActivityForItinerary(itineraryId, request.getStartTime(), request.getEndTime())) {
+                throw new ActivityOverlapException("This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.");
+            }
+        }
 
         Activity activity = Activity.builder()
                 .title(request.getTitle())
@@ -121,7 +127,7 @@ public class ActivityService {
         return mapToResponse(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ActivityResponse> getAllActivities(Long tripId, Long itineraryId) {
         User user = getAuthenticatedUser();
         getAuthenticatedItinerary(tripId, itineraryId, user); // verifies ownership and binding
@@ -132,7 +138,7 @@ public class ActivityService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ActivityResponse getActivityById(Long tripId, Long itineraryId, Long activityId) {
         User user = getAuthenticatedUser();
         getAuthenticatedItinerary(tripId, itineraryId, user); // verifies ownership and binding
@@ -164,6 +170,11 @@ public class ActivityService {
         }
 
         validateTimes(request.getStartTime(), request.getEndTime());
+        if (request.getStartTime() != null && request.getEndTime() != null) {
+            if (activityRepository.existsOverlappingActivityForItineraryExcludingActivity(itineraryId, activityId, request.getStartTime(), request.getEndTime())) {
+                throw new ActivityOverlapException("This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.");
+            }
+        }
 
         activity.setTitle(request.getTitle());
         activity.setDescription(request.getDescription());

@@ -48,9 +48,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(Map.of("message", "Invalid email or password"));
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Map<String, String>> handleSecurity(SecurityException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        if ("User not authenticated".equals(exception.getMessage())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", exception.getMessage()));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", exception.getMessage()));
     }
 
@@ -69,6 +79,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(TripValidationException.class)
     public ResponseEntity<Map<String, String>> handleTripValidation(TripValidationException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(TripOverlapException.class)
+    public ResponseEntity<Map<String, String>> handleTripOverlap(TripOverlapException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(ActivityOverlapException.class)
+    public ResponseEntity<Map<String, String>> handleActivityOverlap(ActivityOverlapException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(TripCapacityException.class)
+    public ResponseEntity<Map<String, String>> handleTripCapacity(TripCapacityException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("message", exception.getMessage()));
     }
 

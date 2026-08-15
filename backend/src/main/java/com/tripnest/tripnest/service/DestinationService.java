@@ -101,6 +101,58 @@ public class DestinationService {
                 .collect(Collectors.toList());
     }
 
+    public List<DestinationSummaryResponse> searchDestinations(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        String cleanQuery = query.trim().toLowerCase();
+
+        List<Trip> allTrips = tripRepository.findAll();
+        List<DestinationSummaryResponse> databaseMatches = allTrips.stream()
+                .filter(t -> (t.getDestination() != null && t.getDestination().toLowerCase().contains(cleanQuery))
+                          || (t.getTitle() != null && t.getTitle().toLowerCase().contains(cleanQuery)))
+                .map(t -> DestinationSummaryResponse.builder()
+                        .tripId(t.getId())
+                        .destination(t.getDestination())
+                        .country("Destination")
+                        .imageUrl(imageClient.getHeroImage(t.getDestination()))
+                        .build())
+                .collect(Collectors.toList());
+
+        List<String> popularPlaces = List.of(
+            "Paris", "France", "Bali", "Indonesia", "Tokyo", "Japan",
+            "Santorini", "Greece", "New York", "USA", "Dubai", "UAE",
+            "Rome", "Italy", "Kyoto", "Japan", "London", "UK", "Marrakech", "Morocco", "Reykjavik", "Iceland"
+        );
+
+        List<DestinationSummaryResponse> popularMatches = new java.util.ArrayList<>();
+        for (int i = 0; i < popularPlaces.size() - 1; i += 2) {
+            String name = popularPlaces.get(i);
+            String country = popularPlaces.get(i + 1);
+            if (name.toLowerCase().contains(cleanQuery) || country.toLowerCase().contains(cleanQuery)) {
+                popularMatches.add(DestinationSummaryResponse.builder()
+                        .destination(name)
+                        .country(country)
+                        .imageUrl(imageClient.getHeroImage(name))
+                        .build());
+            }
+        }
+
+        java.util.Map<String, DestinationSummaryResponse> combined = new java.util.LinkedHashMap<>();
+        for (DestinationSummaryResponse item : databaseMatches) {
+            if (item.getDestination() != null) {
+                combined.putIfAbsent(item.getDestination().toLowerCase(), item);
+            }
+        }
+        for (DestinationSummaryResponse item : popularMatches) {
+            if (item.getDestination() != null) {
+                combined.putIfAbsent(item.getDestination().toLowerCase(), item);
+            }
+        }
+
+        return new java.util.ArrayList<>(combined.values());
+    }
+
     public DestinationResponse getDestinationDataByTripId(Long tripId) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 

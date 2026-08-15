@@ -14,6 +14,7 @@ import lombok.Setter;
 public class BudgetSummaryResponse {
     private Double budget;
     private Double estimatedActivities;
+    private Double expectedExpense;
     private Double actualExpenses;
     private Double remainingBudget;
 }

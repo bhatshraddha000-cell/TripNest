@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tripnest.tripnest.dto.InviteMemberRequest;
 import com.tripnest.tripnest.dto.TripInvitationResponse;
 import com.tripnest.tripnest.dto.TripMemberResponse;
+import com.tripnest.tripnest.exception.TripCapacityException;
 import com.tripnest.tripnest.model.CustomUserDetails;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.TripInvitation;
@@ -56,6 +57,14 @@ public class GroupCollaborationService {
                 .orElseThrow(() -> new SecurityException("You are not a member of this trip"));
         if (senderMembership.getTripRole() != TripMemberRole.GROUP_ADMIN) {
             throw new SecurityException("Only Group Admin can invite members");
+        }
+
+        // Check maximum capacity
+        int maxCapacity = trip.getTravelers() != null ? trip.getTravelers() : 1;
+        long currentMembers = tripMemberRepository.countByTripId(tripId);
+        long pendingInvites = tripInvitationRepository.countByTripIdAndStatus(tripId, TripInvitationStatus.PENDING);
+        if ((currentMembers + pendingInvites) >= maxCapacity) {
+            throw new TripCapacityException("This trip has reached its maximum capacity of " + maxCapacity + " travelers.");
         }
 
         // Find receiver
@@ -147,6 +156,13 @@ public class GroupCollaborationService {
             throw new IllegalArgumentException("Invitation is already " + invitation.getStatus());
         }
 
+        Trip trip = invitation.getTrip();
+        int maxCapacity = trip.getTravelers() != null ? trip.getTravelers() : 1;
+        long currentMembers = tripMemberRepository.countByTripId(trip.getId());
+        if (currentMembers >= maxCapacity) {
+            throw new TripCapacityException("This trip has reached its maximum capacity of " + maxCapacity + " travelers.");
+        }
+
         invitation.setStatus(TripInvitationStatus.ACCEPTED);
         tripInvitationRepository.save(invitation);
 
@@ -186,6 +202,15 @@ public class GroupCollaborationService {
 
         invitation.setStatus(TripInvitationStatus.REJECTED);
         tripInvitationRepository.save(invitation);
+
+        // Notify inviter (sender) that invitation was rejected
+        User inviter = invitation.getSender();
+        if (inviter != null) {
+            String msg = receiver.getFullName() + " rejected your invitation to join " + invitation.getTrip().getTitle() + ".";
+            notificationService.createNotification(inviter, "Trip invitation rejected", msg, "INVITATION_REJECTED");
+        }
+
+        activityLogService.logActivity(receiver, "TRIP", invitation.getTrip().getId(), "INVITATION_REJECTED", "Trip invitation rejected", receiver.getFullName() + " rejected invitation to join " + invitation.getTrip().getTitle());
     }
 
     @Transactional
