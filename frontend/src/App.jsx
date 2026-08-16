@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
@@ -19,6 +19,8 @@ import DestinationsPage from './pages/DestinationsPage.jsx'
 import DestinationDetailsPage from './pages/DestinationDetailsPage.jsx'
 import AttractionDetailsPage from './pages/AttractionDetailsPage.jsx'
 import PublicDestinationDetailsPage from './pages/PublicDestinationDetailsPage.jsx'
+import AnalyticsPage from './pages/AnalyticsPage.jsx'
+import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
 import './App.css'
 
 function App() {
@@ -37,6 +39,26 @@ function App() {
             <DashboardPage />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={<Navigate to="/admin/dashboard" replace />}
       />
       <Route
         path="/profile"
