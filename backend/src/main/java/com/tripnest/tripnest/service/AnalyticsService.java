@@ -482,7 +482,7 @@ public class AnalyticsService {
                 completedTrips++;
             }
 
-            long members = allMembers.stream().filter(tm -> tm.getTrip().getId().equals(trip.getId())).count();
+            long members = allMembers.stream().filter(tm -> tm.getTrip() != null && tm.getTrip().getId() != null && tm.getTrip().getId().equals(trip.getId())).count();
             if (members > 1) {
                 groupTrips++;
             }

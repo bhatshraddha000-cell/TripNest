@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Navigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { isAdminUser } from '../lib/authUtils.js'
 import { analyticsApi } from '../lib/analyticsApi.js'
 import { tripApi } from '../lib/tripApi.js'
 import Navbar from '../components/dashboard/Navbar.jsx'
@@ -12,7 +13,24 @@ function formatCurrency(value) {
   return `₹${Math.round(num).toLocaleString('en-IN')}`
 }
 
-// Helper to generate coordinates for SVG text / legends
+const CATEGORY_COLOR_MAP = {
+  food: '#ea580c',
+  dining: '#ea580c',
+  shopping: '#2563eb',
+  accommodation: '#9333ea',
+  hotel: '#9333ea',
+  lodging: '#9333ea',
+  transportation: '#16a34a',
+  transit: '#16a34a',
+  travel: '#16a34a',
+  flight: '#16a34a',
+  sightseeing: '#db2777',
+  adventure: '#db2777',
+  activities: '#db2777',
+  entertainment: '#ca8a04',
+  other: '#0d9488',
+}
+
 const CATEGORY_COLORS = [
   '#2563eb', // blue
   '#ea580c', // orange
@@ -24,13 +42,30 @@ const CATEGORY_COLORS = [
   '#4f46e5', // indigo
 ]
 
+function getCategoryColor(category, index = 0) {
+  if (!category) return CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+  const key = String(category).trim().toLowerCase()
+  if (CATEGORY_COLOR_MAP[key]) {
+    return CATEGORY_COLOR_MAP[key]
+  }
+  return CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+}
+
 function SvgDoughnutChart({ data, title }) {
-  const total = data.reduce((sum, item) => sum + item.value, 0)
+  const [hoveredIdx, setHoveredIdx] = useState(null)
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="chart-empty-state" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>📊</span>
+        <p style={{ margin: 0 }}>No expenses recorded for this trip yet.</p>
+      </div>
+    )
+  }
+
+  const total = data.reduce((sum, item) => sum + (item.value || 0), 0)
   const radius = 35
   const circumference = 2 * Math.PI * radius
-  let accumulatedPercent = 0
-
-  const [hoveredIdx, setHoveredIdx] = useState(null)
 
   if (total === 0) {
     return (
@@ -41,14 +76,17 @@ function SvgDoughnutChart({ data, title }) {
     )
   }
 
+  let accumulatedPercent = 0
+
   return (
     <div className="custom-chart-container">
       <div className="svg-wrapper">
         <svg viewBox="0 0 100 100" width="200" height="200">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="12" />
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="var(--border-color, #e2e8f0)" strokeWidth="12" />
           {data.map((item, idx) => {
-            const percent = item.value / total
+            const percent = (item.value || 0) / total
             const strokeLength = percent * circumference
+            const gapLength = Math.max(circumference - strokeLength, 0)
             const strokeOffset = circumference - (accumulatedPercent * circumference)
             accumulatedPercent += percent
 
@@ -63,7 +101,7 @@ function SvgDoughnutChart({ data, title }) {
                 fill="none"
                 stroke={item.color}
                 strokeWidth={isHovered ? 15 : 12}
-                strokeDasharray={`${strokeLength} ${circumference}`}
+                strokeDasharray={`${strokeLength} ${gapLength}`}
                 strokeDashoffset={strokeOffset}
                 transform="rotate(-90 50 50)"
                 style={{
@@ -76,11 +114,11 @@ function SvgDoughnutChart({ data, title }) {
             )
           })}
           {/* Centered Summary Text */}
-          <text x="50" y="47" textAnchor="middle" fontSize="6" fontWeight="bold" fill="var(--text-secondary)">
+          <text x="50" y="47" textAnchor="middle" fontSize="6" fontWeight="bold" fill="var(--text-secondary, #64748b)">
             TOTAL
           </text>
-          <text x="50" y="56" textAnchor="middle" fontSize="8" fontWeight="800" fill="#1e293b">
-            {total > 100000 ? `${Math.round(total / 1000)}k` : Math.round(total)}
+          <text x="50" y="56" textAnchor="middle" fontSize="8" fontWeight="800" fill="var(--text-primary, #1e293b)">
+            {total > 100000 ? `₹${Math.round(total / 1000)}k` : `₹${Math.round(total)}`}
           </text>
         </svg>
       </div>
@@ -102,7 +140,7 @@ function SvgDoughnutChart({ data, title }) {
                 gap: '8px',
                 padding: '6px 12px',
                 borderRadius: '8px',
-                backgroundColor: isHovered ? 'rgba(0,0,0,0.03)' : 'transparent',
+                backgroundColor: isHovered ? 'rgba(0,0,0,0.04)' : 'transparent',
                 transition: 'background-color 0.2s',
               }}
             >
@@ -113,10 +151,13 @@ function SvgDoughnutChart({ data, title }) {
                   height: '12px',
                   borderRadius: '50%',
                   backgroundColor: item.color,
+                  flexShrink: 0,
                 }}
               />
-              <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1 }}>{item.label}</span>
-              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1, color: 'var(--text-primary, #1e293b)' }}>
+                {item.label}
+              </span>
+              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary, #64748b)' }}>
                 {formatCurrency(item.value)} ({percent}%)
               </span>
             </div>
@@ -128,10 +169,9 @@ function SvgDoughnutChart({ data, title }) {
 }
 
 function SvgBarChart({ data, maxValue }) {
-  const maxVal = maxValue || Math.max(...data.map((d) => d.value), 1)
   const [hoveredIdx, setHoveredIdx] = useState(null)
 
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="chart-empty-state">
         <span style={{ fontSize: '2rem' }}>📊</span>
@@ -139,6 +179,8 @@ function SvgBarChart({ data, maxValue }) {
       </div>
     )
   }
+
+  const maxVal = maxValue || Math.max(...data.map((d) => d.value || 0), 1)
 
   return (
     <div className="svg-bar-chart-container" style={{ width: '100%', padding: '16px 8px' }}>
@@ -265,7 +307,7 @@ function AnalyticsPage() {
     ? Object.keys(data.expenseByCategory).map((key, i) => ({
         label: key,
         value: data.expenseByCategory[key],
-        color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+        color: getCategoryColor(key, i),
       }))
     : []
 

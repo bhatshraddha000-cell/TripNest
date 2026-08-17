@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,8 +26,10 @@ import com.tripnest.tripnest.dto.AdminAnalyticsResponse;
 import com.tripnest.tripnest.dto.AnalyticsResponse;
 import com.tripnest.tripnest.model.Activity;
 import com.tripnest.tripnest.model.CustomUserDetails;
+import com.tripnest.tripnest.model.Document;
 import com.tripnest.tripnest.model.Expense;
 import com.tripnest.tripnest.model.ExpenseSplit;
+import com.tripnest.tripnest.model.Notification;
 import com.tripnest.tripnest.model.PaymentStatus;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.TripMember;
@@ -175,17 +178,17 @@ public class AnalyticsServiceTest {
 
     @Test
     public void testGetAdminAnalytics_Success() {
-        when(userRepository.count()).thenReturn(10L);
+        when(userRepository.findAll()).thenReturn(Collections.nCopies(10, user));
         
-        TripMember tm1 = TripMember.builder().user(user).build();
-        TripMember tm2 = TripMember.builder().user(arun).build();
+        TripMember tm1 = TripMember.builder().user(user).trip(upcomingTrip).build();
+        TripMember tm2 = TripMember.builder().user(arun).trip(upcomingTrip).build();
         when(tripMemberRepository.findAll()).thenReturn(List.of(tm1, tm2));
 
         when(tripRepository.findAll()).thenReturn(List.of(upcomingTrip, completedTrip));
-        when(activityRepository.count()).thenReturn(15L);
-        when(expenseRepository.count()).thenReturn(8L);
-        when(documentRepository.count()).thenReturn(4L);
-        when(notificationRepository.count()).thenReturn(20L);
+        when(activityRepository.findAll()).thenReturn(Collections.nCopies(15, Activity.builder().build()));
+        when(expenseRepository.findAll()).thenReturn(Collections.nCopies(8, Expense.builder().build()));
+        when(documentRepository.findAll()).thenReturn(Collections.nCopies(4, Document.builder().build()));
+        when(notificationRepository.findAll()).thenReturn(Collections.nCopies(20, Notification.builder().build()));
 
         AdminAnalyticsResponse response = analyticsService.getAdminAnalytics();
 

@@ -271,6 +271,7 @@ function SvgDoughnutChart({ data }) {
           {data.map((item, idx) => {
             const percent = item.value / total
             const strokeLength = percent * circumference
+            const gapLength = Math.max(circumference - strokeLength, 0)
             const strokeOffset = circumference - (accumulatedPercent * circumference)
             accumulatedPercent += percent
 
@@ -285,7 +286,7 @@ function SvgDoughnutChart({ data }) {
                 fill="none"
                 stroke={item.color}
                 strokeWidth={isHovered ? 15 : 12}
-                strokeDasharray={`${strokeLength} ${circumference}`}
+                strokeDasharray={`${strokeLength} ${gapLength}`}
                 strokeDashoffset={strokeOffset}
                 transform="rotate(-90 50 50)"
                 style={{
