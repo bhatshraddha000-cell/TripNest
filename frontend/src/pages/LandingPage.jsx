@@ -5,9 +5,6 @@ import StorySection from '../components/landing/StorySection.jsx'
 import DestinationsSection from '../components/landing/DestinationsSection.jsx'
 import FeaturesSection from '../components/landing/FeaturesSection.jsx'
 import HowItWorks from '../components/landing/HowItWorks.jsx'
-import TravelGallery from '../components/landing/TravelGallery.jsx'
-import Testimonials from '../components/landing/Testimonials.jsx'
-import StatsSection from '../components/landing/StatsSection.jsx'
 import CTASection from '../components/landing/CTASection.jsx'
 import Footer from '../components/landing/Footer.jsx'
 import SectionReveal from '../components/landing/SectionReveal.jsx'
@@ -31,15 +28,6 @@ function LandingPage() {
           <HowItWorks />
         </SectionReveal>
         <SectionReveal>
-          <TravelGallery />
-        </SectionReveal>
-        <SectionReveal>
-          <Testimonials />
-        </SectionReveal>
-        <SectionReveal>
-          <StatsSection />
-        </SectionReveal>
-        <SectionReveal>
           <CTASection />
         </SectionReveal>
       </main>
@@ -49,3 +37,4 @@ function LandingPage() {
 }
 
 export default LandingPage
+

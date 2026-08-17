@@ -19,9 +19,7 @@ function Sidebar() {
         { label: 'Itinerary', path: '/itinerary' },
         { label: 'Activity Scheduling', path: '/activity-scheduler' },
         { label: 'Destinations', path: '/destinations' },
-        { label: 'Bookings', path: '/bookings' },
         { label: 'Profile', path: '/profile' },
-        { label: 'Settings', path: '/settings' },
       ]
 
   return (

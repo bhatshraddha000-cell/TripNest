@@ -165,22 +165,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/bookings"
-        element={
-          <ProtectedRoute>
-            <ComingSoonPage title="My Bookings" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <ComingSoonPage title="Account Settings" />
-          </ProtectedRoute>
-        }
-      />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
