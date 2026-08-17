@@ -60,6 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/uploads/profiles/**").permitAll()
 
+                        // Public Feedback APIs
+                        .requestMatchers("/api/feedback/**").permitAll()
+
                         // Destination APIs - Admin Only Write Access
                         .requestMatchers(HttpMethod.POST, "/api/destinations/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/destinations/**").hasRole("ADMIN")

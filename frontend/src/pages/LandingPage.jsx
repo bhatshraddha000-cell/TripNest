@@ -5,6 +5,7 @@ import StorySection from '../components/landing/StorySection.jsx'
 import DestinationsSection from '../components/landing/DestinationsSection.jsx'
 import FeaturesSection from '../components/landing/FeaturesSection.jsx'
 import HowItWorks from '../components/landing/HowItWorks.jsx'
+import FeedbackSection from '../components/landing/FeedbackSection.jsx'
 import CTASection from '../components/landing/CTASection.jsx'
 import Footer from '../components/landing/Footer.jsx'
 import SectionReveal from '../components/landing/SectionReveal.jsx'
@@ -26,6 +27,9 @@ function LandingPage() {
         </SectionReveal>
         <SectionReveal direction="right">
           <HowItWorks />
+        </SectionReveal>
+        <SectionReveal>
+          <FeedbackSection />
         </SectionReveal>
         <SectionReveal>
           <CTASection />
