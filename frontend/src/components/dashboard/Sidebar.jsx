@@ -1,15 +1,15 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { isAdminUser } from '../../lib/authUtils.js'
 
 function Sidebar() {
   const location = useLocation()
   const { user } = useAuth()
 
-  const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+  const isAdmin = isAdminUser(user)
 
   const items = isAdmin
     ? [
-        { label: 'Dashboard', path: '/dashboard' },
         { label: 'Admin Dashboard', path: '/admin/dashboard' },
       ]
     : [

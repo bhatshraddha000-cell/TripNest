@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { isAdminUser } from '../lib/authUtils.js'
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, authLoading, user } = useAuth()
@@ -20,14 +21,24 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
+  const isAdmin = isAdminUser(user)
+
   if (allowedRoles) {
-    const userRole = user?.role
-    const userRoles = user?.roles || []
-    const hasRole = allowedRoles.some(
-      (role) => userRole === role || userRoles.includes(role)
-    )
+    const hasRole = allowedRoles.some((role) => {
+      if (role === 'ADMIN' || role === 'ROLE_ADMIN' || role === 'ROLE_SYSTEM_ADMIN') {
+        return isAdmin
+      }
+      const userRole = user?.role
+      const userRoles = user?.roles || []
+      return userRole === role || userRoles.includes(role)
+    })
+
     if (!hasRole) {
-      return <Navigate to="/dashboard" replace />
+      return <Navigate to={isAdmin ? '/admin/dashboard' : '/dashboard'} replace />
+    }
+  } else {
+    if (isAdmin && (location.pathname === '/dashboard' || location.pathname === '/')) {
+      return <Navigate to="/admin/dashboard" replace />
     }
   }
 

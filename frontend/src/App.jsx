@@ -57,6 +57,14 @@ function App() {
         }
       />
       <Route
+        path="/admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={<Navigate to="/admin/dashboard" replace />}
       />

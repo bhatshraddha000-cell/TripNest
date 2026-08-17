@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { isAdminUser } from '../lib/authUtils.js'
 import { dashboardApi } from '../lib/dashboardApi.js'
 import Navbar from '../components/dashboard/Navbar.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
@@ -78,7 +79,7 @@ function DashboardPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || isAdminUser(user)) return
     let isMounted = true
 
     async function fetchDashboard() {
@@ -106,7 +107,11 @@ function DashboardPage() {
     return () => {
       isMounted = false
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, user])
+
+  if (!authLoading && isAuthenticated && isAdminUser(user)) {
+    return <Navigate to="/admin/dashboard" replace />
+  }
 
   if (!authLoading && !isAuthenticated) {
     return <Navigate to="/login" replace />

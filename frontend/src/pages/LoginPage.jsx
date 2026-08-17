@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from './AuthLayout.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { isAdminUser } from '../lib/authUtils.js'
 
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, isAuthenticated, authLoading } = useAuth()
+  const { login, isAuthenticated, authLoading, user } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,10 +17,15 @@ function LoginPage() {
   const [status, setStatus] = useState({ type: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
 
-  const redirectTo = location.state?.from?.pathname ?? '/'
-
   if (isAuthenticated && !authLoading) {
-    return <Navigate to={redirectTo} replace />
+    if (isAdminUser(user)) {
+      return <Navigate to="/admin/dashboard" replace />
+    }
+    const requestedPath = location.state?.from?.pathname
+    const destination = (requestedPath && requestedPath !== '/' && requestedPath !== '/login' && requestedPath !== '/dashboard')
+      ? requestedPath
+      : '/dashboard'
+    return <Navigate to={destination} replace />
   }
 
   function handleChange(event) {
@@ -35,8 +41,17 @@ function LoginPage() {
     setStatus({ type: '', message: '' })
 
     try {
-      await login(formData)
-      navigate(redirectTo, { replace: true })
+      const loginRes = await login(formData)
+      const currentUser = loginRes?.user || user
+      if (isAdminUser(currentUser)) {
+        navigate('/admin/dashboard', { replace: true })
+      } else {
+        const requestedPath = location.state?.from?.pathname
+        const destination = (requestedPath && requestedPath !== '/' && requestedPath !== '/login' && requestedPath !== '/dashboard')
+          ? requestedPath
+          : '/dashboard'
+        navigate(destination, { replace: true })
+      }
     } catch (error) {
       setFieldErrors(error.fieldErrors ?? {})
       setStatus({ type: 'error', message: error.message })

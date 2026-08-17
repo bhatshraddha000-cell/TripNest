@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { isAdminUser } from '../lib/authUtils.js'
 import { analyticsApi } from '../lib/analyticsApi.js'
 import Navbar from '../components/dashboard/Navbar.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
@@ -460,7 +461,7 @@ function AdminDashboardPage() {
   // Load appropriate data when tab or global filters change
   useEffect(() => {
     if (!isAuthenticated) return
-    const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+    const isAdmin = isAdminUser(user)
     if (!isAdmin) return
 
     if (activeTab === 'overview') {
@@ -473,15 +474,17 @@ function AdminDashboardPage() {
   }, [isAuthenticated, user, activeTab, dateFilter, statusFilter, destFilter])
 
   // Get User details
-  const viewUserDetails = async (userId) => {
+  const handleViewUserDetail = async (userId) => {
+    setSelectedUserId(userId)
+    setLoadingUserDetail(true)
     try {
-      setLoadingDetails(true)
-      const details = await analyticsApi.getAdminUserDetails(userId)
-      setSelectedUserDetails(details)
+      const detail = await analyticsApi.getAdminUserDetails(userId)
+      setSelectedUserDetails(detail)
     } catch (err) {
-      console.error(err)
+      console.error('Failed to load user details:', err)
+      setError('Unable to load user details.')
     } finally {
-      setLoadingDetails(false)
+      setLoadingUserDetail(false)
     }
   }
 

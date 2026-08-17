@@ -251,7 +251,7 @@ function AnalyticsPage() {
     return <Navigate to="/login" replace />
   }
 
-  const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+  const isAdmin = isAdminUser(user)
 
   if (isAdmin) {
     return <Navigate to="/admin/dashboard" replace />
