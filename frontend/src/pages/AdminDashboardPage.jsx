@@ -476,8 +476,9 @@ function AdminDashboardPage() {
 
   // Get User details
   const handleViewUserDetail = async (userId) => {
-    setSelectedUserId(userId)
-    setLoadingUserDetail(true)
+    if (!userId) return
+    setLoadingDetails(true)
+    setError(null)
     try {
       const detail = await analyticsApi.getAdminUserDetails(userId)
       setSelectedUserDetails(detail)
@@ -485,9 +486,10 @@ function AdminDashboardPage() {
       console.error('Failed to load user details:', err)
       setError('Unable to load user details.')
     } finally {
-      setLoadingUserDetail(false)
+      setLoadingDetails(false)
     }
   }
+  const viewUserDetails = handleViewUserDetail
 
   // Get Trip details
   const viewTripDetails = async (tripId) => {
@@ -1038,55 +1040,68 @@ function AdminDashboardPage() {
                     <div className="spinner" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3b82f6', animation: 'spin 1s linear infinite' }} />
                   </div>
                 ) : (
-                  <div className="dashboard-card" style={{ padding: '24px', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
-                          <th style={{ padding: '12px' }}>Name</th>
-                          <th style={{ padding: '12px' }}>Email</th>
-                          <th style={{ padding: '12px' }}>System Role</th>
-                          <th style={{ padding: '12px', textAlign: 'center' }}>Trips Created</th>
-                          <th style={{ padding: '12px', textAlign: 'center' }}>Trips Joined</th>
-                          <th style={{ padding: '12px' }}>Status</th>
-                          <th style={{ padding: '12px' }}>Registered Date</th>
-                          <th style={{ padding: '12px' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredUsers.map((u) => (
-                          <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '12px', fontWeight: 600 }}>{u.fullName}</td>
-                            <td style={{ padding: '12px' }}>{u.email}</td>
-                            <td style={{ padding: '12px' }}>
-                              <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary'}`} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-                                {u.role}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'center', fontWeight: 700 }}>{u.tripsCreatedCount}</td>
-                            <td style={{ padding: '12px', textAlign: 'center', fontWeight: 700 }}>{u.tripsJoinedCount}</td>
-                            <td style={{ padding: '12px' }}>
-                              <span style={{ color: '#10b981', fontWeight: 700 }}>● Active</span>
-                            </td>
-                            <td style={{ padding: '12px' }}>{formatDate(u.createdAt)}</td>
-                            <td style={{ padding: '12px' }}>
-                              <button
-                                onClick={() => viewUserDetails(u.id)}
-                                style={{ border: 'none', backgroundColor: '#3b82f6', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
-                              >
-                                View Details
-                              </button>
-                            </td>
+                  <div className="dashboard-card" style={{ padding: '24px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '10px' }}>
+                      <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #e2e8f0', color: 'var(--text-secondary, #64748b)' }}>
+                            <th style={{ padding: '14px 16px', minWidth: '150px' }}>Name</th>
+                            <th style={{ padding: '14px 16px', minWidth: '220px' }}>Email</th>
+                            <th style={{ padding: '14px 16px', minWidth: '130px', whiteSpace: 'nowrap' }}>System Role</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'center', minWidth: '120px', whiteSpace: 'nowrap' }}>Trips Created</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'center', minWidth: '110px', whiteSpace: 'nowrap' }}>Trips Joined</th>
+                            <th style={{ padding: '14px 16px', minWidth: '100px', whiteSpace: 'nowrap' }}>Status</th>
+                            <th style={{ padding: '14px 16px', minWidth: '140px', whiteSpace: 'nowrap' }}>Registered Date</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'right', minWidth: '130px', whiteSpace: 'nowrap' }}>Actions</th>
                           </tr>
-                        ))}
-                        {filteredUsers.length === 0 && (
-                          <tr>
-                            <td colSpan="8" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
-                              No users match search or filter selections.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((u) => (
+                            <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>{u.fullName}</td>
+                              <td style={{ padding: '14px 16px', color: 'var(--text-secondary, #475569)' }}>{u.email}</td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary'}`} style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px' }}>
+                                  {u.role === 'ADMIN' ? 'System Admin' : u.role}
+                                </span>
+                              </td>
+                              <td style={{ padding: '14px 16px', textAlign: 'center', fontWeight: 800, color: '#3b82f6' }}>{u.tripsCreatedCount}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'center', fontWeight: 800, color: '#10b981' }}>{u.tripsJoinedCount}</td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.85rem' }}>● Active</span>
+                              </td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', color: 'var(--text-secondary, #64748b)' }}>{formatDate(u.createdAt)}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <button
+                                  onClick={() => handleViewUserDetail(u.id)}
+                                  style={{
+                                    border: 'none',
+                                    backgroundColor: '#2563eb',
+                                    color: '#ffffff',
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 4px rgba(37,99,235,0.2)',
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                >
+                                  View Details
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {filteredUsers.length === 0 && (
+                            <tr>
+                              <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                                No users match search or filter selections.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>
@@ -1098,13 +1113,13 @@ function AdminDashboardPage() {
             {activeTab === 'trips' && (
               <>
                 {/* Search & Filter Controls */}
-                <div className="dashboard-card" style={{ padding: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div className="dashboard-card" style={{ padding: '16px 24px', width: '100%', boxSizing: 'border-box', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <input
                     type="text"
                     placeholder="Search trip or creator..."
                     value={tripSearch}
                     onChange={(e) => setTripSearch(e.target.value)}
-                    style={{ padding: '8px 16px', border: '1px solid #cbd5e1', borderRadius: '8px', minWidth: '240px' }}
+                    style={{ flex: '1 1 260px', minWidth: '240px', padding: '10px 16px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.9rem' }}
                   />
 
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1112,7 +1127,7 @@ function AdminDashboardPage() {
                     <select
                       value={tripStatusFilter}
                       onChange={(e) => setTripStatusFilter(e.target.value)}
-                      style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600 }}
+                      style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem' }}
                     >
                       <option value="ALL">All Statuses</option>
                       <option value="UPCOMING">Upcoming</option>
@@ -1126,7 +1141,7 @@ function AdminDashboardPage() {
                     <select
                       value={tripDestFilter}
                       onChange={(e) => setTripDestFilter(e.target.value)}
-                      style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600 }}
+                      style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem' }}
                     >
                       <option value="ALL">All Destinations</option>
                       {Array.from(new Set(tripsList.map(t => t.destination).filter(Boolean))).map((dest) => (
@@ -1142,60 +1157,73 @@ function AdminDashboardPage() {
                     <div className="spinner" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '36px', height: '36px', borderRadius: '50%', borderLeftColor: '#3b82f6', animation: 'spin 1s linear infinite' }} />
                   </div>
                 ) : (
-                  <div className="dashboard-card" style={{ padding: '24px', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
-                          <th style={{ padding: '12px' }}>Trip Name</th>
-                          <th style={{ padding: '12px' }}>Creator</th>
-                          <th style={{ padding: '12px' }}>Destination</th>
-                          <th style={{ padding: '12px', textAlign: 'center' }}>Members</th>
-                          <th style={{ padding: '12px' }}>Status</th>
-                          <th style={{ padding: '12px' }}>Start Date</th>
-                          <th style={{ padding: '12px' }}>End Date</th>
-                          <th style={{ padding: '12px', textAlign: 'right' }}>Budget</th>
-                          <th style={{ padding: '12px' }}>Created Date</th>
-                          <th style={{ padding: '12px' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredTrips.map((t) => (
-                          <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '12px', fontWeight: 600 }}>{t.title}</td>
-                            <td style={{ padding: '12px' }}>
-                              <div>{t.creatorName}</div>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t.creatorEmail}</span>
-                            </td>
-                            <td style={{ padding: '12px' }}>{t.destination}</td>
-                            <td style={{ padding: '12px', textAlign: 'center', fontWeight: 700 }}>{t.membersCount}</td>
-                            <td style={{ padding: '12px' }}>
-                              <span className="badge" style={{ backgroundColor: t.status === 'ONGOING' ? '#10b981' : t.status === 'UPCOMING' ? '#3b82f6' : '#64748b', color: '#fff', padding: '4px 8px' }}>
-                                {t.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px' }}>{formatDate(t.startDate)}</td>
-                            <td style={{ padding: '12px' }}>{formatDate(t.endDate)}</td>
-                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{formatCurrency(t.budget)}</td>
-                            <td style={{ padding: '12px' }}>{formatDate(t.createdAt)}</td>
-                            <td style={{ padding: '12px' }}>
-                              <button
-                                onClick={() => viewTripDetails(t.id)}
-                                style={{ border: 'none', backgroundColor: '#3b82f6', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
-                              >
-                                View Trip
-                              </button>
-                            </td>
+                  <div className="dashboard-card" style={{ padding: '24px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '10px' }}>
+                      <table style={{ width: '100%', minWidth: '1050px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #e2e8f0', color: 'var(--text-secondary, #64748b)' }}>
+                            <th style={{ padding: '14px 16px', minWidth: '160px' }}>Trip Name</th>
+                            <th style={{ padding: '14px 16px', minWidth: '180px' }}>Creator</th>
+                            <th style={{ padding: '14px 16px', minWidth: '140px' }}>Destination</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'center', minWidth: '90px', whiteSpace: 'nowrap' }}>Members</th>
+                            <th style={{ padding: '14px 16px', minWidth: '110px', whiteSpace: 'nowrap' }}>Status</th>
+                            <th style={{ padding: '14px 16px', minWidth: '120px', whiteSpace: 'nowrap' }}>Start Date</th>
+                            <th style={{ padding: '14px 16px', minWidth: '120px', whiteSpace: 'nowrap' }}>End Date</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'right', minWidth: '110px', whiteSpace: 'nowrap' }}>Budget</th>
+                            <th style={{ padding: '14px 16px', minWidth: '130px', whiteSpace: 'nowrap' }}>Created Date</th>
+                            <th style={{ padding: '14px 16px', textAlign: 'right', minWidth: '120px', whiteSpace: 'nowrap' }}>Actions</th>
                           </tr>
-                        ))}
-                        {filteredTrips.length === 0 && (
-                          <tr>
-                            <td colSpan="10" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
-                              No scheduled trips match search or filter selections.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {filteredTrips.map((t) => (
+                            <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>{t.title}</td>
+                              <td style={{ padding: '14px 16px' }}>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary, #1e293b)' }}>{t.creatorName}</div>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #64748b)' }}>{t.creatorEmail}</span>
+                              </td>
+                              <td style={{ padding: '14px 16px', color: 'var(--text-secondary, #475569)' }}>{t.destination}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'center', fontWeight: 800, color: '#3b82f6' }}>{t.membersCount}</td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                <span className="badge" style={{ backgroundColor: t.status === 'ONGOING' ? '#10b981' : t.status === 'UPCOMING' ? '#3b82f6' : '#64748b', color: '#fff', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px' }}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', color: 'var(--text-secondary, #64748b)' }}>{formatDate(t.startDate)}</td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', color: 'var(--text-secondary, #64748b)' }}>{formatDate(t.endDate)}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap' }}>{formatCurrency(t.budget)}</td>
+                              <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', color: 'var(--text-secondary, #64748b)' }}>{formatDate(t.createdAt)}</td>
+                              <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <button
+                                  onClick={() => viewTripDetails(t.id)}
+                                  style={{
+                                    border: 'none',
+                                    backgroundColor: '#2563eb',
+                                    color: '#ffffff',
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 4px rgba(37,99,235,0.2)',
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                >
+                                  View Trip
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {filteredTrips.length === 0 && (
+                            <tr>
+                              <td colSpan="10" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                                No scheduled trips match your search or filter selections.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>
@@ -1259,9 +1287,9 @@ function AdminDashboardPage() {
 
                   {/* Associated Trips list */}
                   <div>
-                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', fontWeight: 700 }}>Associated Scheduled Trips ({selectedUserDetails.trips.length})</h4>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', fontWeight: 700 }}>Associated Scheduled Trips ({selectedUserDetails.trips?.length || 0})</h4>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                      {selectedUserDetails.trips.map((t) => (
+                      {selectedUserDetails.trips?.map((t) => (
                         <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
                           <div>
                             <strong style={{ display: 'block' }}>{t.title}</strong>
@@ -1273,7 +1301,7 @@ function AdminDashboardPage() {
                           </div>
                         </div>
                       ))}
-                      {selectedUserDetails.trips.length === 0 && (
+                      {(!selectedUserDetails.trips || selectedUserDetails.trips.length === 0) && (
                         <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No trips registered for this user yet.</div>
                       )}
                     </div>

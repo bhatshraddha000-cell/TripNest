@@ -677,24 +677,24 @@ public class AnalyticsService {
                 .orElse("USER");
 
         long tripsCreatedCount = allTrips.stream()
-                .filter(t -> t.getUser().getId().equals(user.getId()))
+                .filter(t -> t.getUser() != null && t.getUser().getId() != null && t.getUser().getId().equals(user.getId()))
                 .count();
 
         long tripsJoinedCount = allMembers.stream()
-                .filter(tm -> tm.getUser().getId().equals(user.getId()))
+                .filter(tm -> tm.getUser() != null && tm.getUser().getId() != null && tm.getUser().getId().equals(user.getId()))
                 .count();
 
         // Get trips user is creator or member of
         List<AdminUserListResponse.AdminUserTripItem> userTrips = new ArrayList<>();
         
         List<Trip> joinedTrips = allMembers.stream()
-                .filter(tm -> tm.getUser().getId().equals(user.getId()))
+                .filter(tm -> tm.getUser() != null && tm.getUser().getId() != null && tm.getUser().getId().equals(user.getId()) && tm.getTrip() != null)
                 .map(TripMember::getTrip)
                 .distinct()
                 .toList();
 
         for (Trip trip : joinedTrips) {
-            boolean isCreator = trip.getUser().getId().equals(user.getId());
+            boolean isCreator = trip.getUser() != null && trip.getUser().getId() != null && trip.getUser().getId().equals(user.getId());
             userTrips.add(AdminUserListResponse.AdminUserTripItem.builder()
                     .id(trip.getId())
                     .title(trip.getTitle())

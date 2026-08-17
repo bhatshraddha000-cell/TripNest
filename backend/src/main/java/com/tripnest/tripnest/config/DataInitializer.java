@@ -28,7 +28,7 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Checking database configuration and seeding initial data...");
 
         // Ensure roles exist
-        Role travelerRole = roleRepository.findByName(RoleName.ROLE_TRAVELER)
+        roleRepository.findByName(RoleName.ROLE_TRAVELER)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.ROLE_TRAVELER).build()));
         
         Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
@@ -50,21 +50,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("System administrator user successfully seeded (email: admin@tripnest.com)");
         } else {
             log.info("System administrator user already exists.");
-        }
-
-        // Seed regular traveler for testing
-        String travelerEmail = "traveler@tripnest.com";
-        if (!userRepository.existsByEmail(travelerEmail)) {
-            User traveler = User.builder()
-                    .fullName("Traveler User")
-                    .email(travelerEmail)
-                    .password(passwordEncoder.encode("password123"))
-                    .roles(Set.of(travelerRole))
-                    .build();
-            userRepository.save(traveler);
-            log.info("Test traveler user successfully seeded (email: traveler@tripnest.com)");
-        } else {
-            log.info("Test traveler user already exists.");
         }
     }
 }
