@@ -134,8 +134,8 @@ function DashboardPage() {
   const stats = [
     { label: 'Total Trips', value: loading ? '...' : String(totalTripsValue), icon: '🧳' },
     { label: 'Upcoming Trips', value: loading ? '...' : String(upcomingTripsValue), icon: '🗓' },
-    { label: 'Total Budget', value: loading ? '...' : formatCurrency(totalBudgetValue), icon: '💰' },
-    { label: 'Total Expenses', value: loading ? '...' : formatCurrency(totalExpensesValue), icon: '🛍' },
+    { label: 'Total Budget (All Trips)', value: loading ? '...' : formatCurrency(totalBudgetValue), icon: '💰' },
+    { label: 'Total Expenses (All Trips)', value: loading ? '...' : formatCurrency(totalExpensesValue), icon: '🛍' },
   ]
 
   const upcomingTrips = (Array.isArray(dashboardData?.upcomingTrips) ? dashboardData.upcomingTrips : []).map((trip) => ({

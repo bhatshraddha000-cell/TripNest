@@ -21,6 +21,9 @@ import AttractionDetailsPage from './pages/AttractionDetailsPage.jsx'
 import PublicDestinationDetailsPage from './pages/PublicDestinationDetailsPage.jsx'
 import AnalyticsPage from './pages/AnalyticsPage.jsx'
 import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
+import ContactPage from './pages/ContactPage.jsx'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage.jsx'
+import TermsPage from './pages/TermsPage.jsx'
 import './App.css'
 
 function App() {
@@ -28,6 +31,9 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
