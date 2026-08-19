@@ -21,4 +21,6 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     long countByUser(User user);
 
     Optional<ActivityLog> findTopByUserOrderByCreatedAtAsc(User user);
+
+    void deleteByUser(User user);
 }

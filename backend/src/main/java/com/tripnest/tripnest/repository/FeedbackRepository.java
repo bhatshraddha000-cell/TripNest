@@ -7,7 +7,11 @@ import org.springframework.stereotype.Repository;
 
 import com.tripnest.tripnest.model.Feedback;
 
+import com.tripnest.tripnest.model.User;
+
 @Repository
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     List<Feedback> findTop3ByOrderByCreatedAtDesc();
+
+    void deleteByUser(User user);
 }
