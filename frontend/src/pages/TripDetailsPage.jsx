@@ -8,6 +8,7 @@ import MembersTab from '../components/MembersTab.jsx'
 import ExpensesTab from '../components/ExpensesTab.jsx'
 import DocumentsTab from '../components/DocumentsTab.jsx'
 import ChatTab from '../components/ChatTab.jsx'
+import ConfirmationModal from '../components/common/ConfirmationModal.jsx'
 
 function TripDetailsPage() {
   const { id } = useParams()
@@ -17,6 +18,7 @@ function TripDetailsPage() {
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
@@ -54,10 +56,11 @@ function TripDetailsPage() {
   const deleteTrip = async () => {
     try {
       setDeleting(true)
+      setDeleteError('')
       await tripApi.deleteTrip(id)
       navigate('/trips')
     } catch (err) {
-      setError(err?.response?.data?.message ?? 'Failed to delete the trip.')
+      setDeleteError(err?.response?.data?.message ?? 'Failed to delete the trip.')
       setShowDelete(false)
     } finally {
       setDeleting(false)
@@ -75,6 +78,11 @@ function TripDetailsPage() {
               {loading ? <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-secondary)' }}>Loading trip details...</div> : error ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}><h3>Unable to load trip</h3><p style={{ color: 'var(--text-secondary)' }}>{error}</p><Link to="/trips" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Back to My Trips</Link></div>
               ) : <>
+                {deleteError && (
+                  <div className="status-message error" style={{ padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+                    {deleteError}
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '24px' }}>
                   <div><p className="eyebrow"><Link to="/trips" style={{ color: 'inherit', textDecoration: 'none' }}>Planner</Link> &rarr; Trip Details</p><h2 style={{ fontSize: '2rem', margin: '4px 0' }}>{trip.title}</h2><p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', margin: 0 }}>{trip.destination}</p></div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -134,18 +142,17 @@ function TripDetailsPage() {
           </main>
         </div>
       </div>
-      {showDelete && (
-        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', background: 'rgba(0,0,0,0.6)', zIndex: 9999 }}>
-          <div style={{ background: 'var(--card-bg, #161d2b)', padding: '30px', borderRadius: '20px', maxWidth: '450px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <h3 style={{ color: '#ffffff', marginTop: 0, fontSize: '1.25rem' }}>Delete Escape Plan?</h3>
-            <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.5', margin: '12px 0 24px' }}>Are you sure you want to delete “{trip?.title}”? All associated itinerary days and activities will be lost.</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button className="secondary-button" onClick={() => setShowDelete(false)} disabled={deleting}>Keep Plan</button>
-              <button className="primary-button" onClick={deleteTrip} disabled={deleting} style={{ background: '#ef4444', borderColor: '#ef4444' }}>{deleting ? 'Deleting...' : 'Yes, Delete'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showDelete}
+        title="Delete Escape Plan?"
+        message={`Are you sure you want to delete “${trip?.title}”? All associated itinerary days and activities will be lost.`}
+        cancelLabel="Keep Plan"
+        confirmLabel="Yes, Delete"
+        onConfirm={deleteTrip}
+        onCancel={() => setShowDelete(false)}
+        submitting={deleting}
+        isDanger
+      />
     </div>
   )
 }

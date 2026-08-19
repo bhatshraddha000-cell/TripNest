@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { documentApi } from '../lib/documentApi.js'
 import { api } from '../lib/api.js'
+import ConfirmationModal from './common/ConfirmationModal.jsx'
 
 function DocumentsTab({ tripId, tripRole, currentUserId }) {
   const [documents, setDocuments] = useState([])
@@ -12,6 +13,9 @@ function DocumentsTab({ tripId, tripRole, currentUserId }) {
   const [file, setFile] = useState(null)
   const [documentType, setDocumentType] = useState('Flight Ticket')
   const [uploading, setUploading] = useState(false)
+
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, docId: null, fileName: '', submitting: false })
 
   const docTypes = [
     'Flight Ticket',
@@ -101,16 +105,23 @@ function DocumentsTab({ tripId, tripRole, currentUserId }) {
     }
   }
 
-  const handleDelete = async (docId, fileName) => {
-    if (!window.confirm(`Are you sure you want to delete "${fileName}"?`)) return
+  const openDeleteModal = (docId, fileName) => {
+    setDeleteModal({ isOpen: true, docId, fileName, submitting: false })
+  }
+
+  const confirmDeleteDocument = async () => {
+    if (!deleteModal.docId) return
     try {
+      setDeleteModal((prev) => ({ ...prev, submitting: true }))
       setError('')
       setSuccess('')
-      await documentApi.deleteDocument(docId)
+      await documentApi.deleteDocument(deleteModal.docId)
       setSuccess('Document deleted successfully!')
+      setDeleteModal({ isOpen: false, docId: null, fileName: '', submitting: false })
       fetchDocuments()
     } catch (err) {
       setError(err?.response?.data?.message ?? 'Failed to delete document.')
+      setDeleteModal({ isOpen: false, docId: null, fileName: '', submitting: false })
     }
   }
 
@@ -233,7 +244,7 @@ function DocumentsTab({ tripId, tripRole, currentUserId }) {
                     {canDelete && (
                       <button
                         className="secondary-button compact-button danger-button"
-                        onClick={() => handleDelete(doc.id, doc.fileName)}
+                        onClick={() => openDeleteModal(doc.id, doc.fileName)}
                         style={{ padding: '6px 12px', fontSize: '0.8rem', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
                       >
                         Delete
@@ -246,6 +257,18 @@ function DocumentsTab({ tripId, tripRole, currentUserId }) {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Document?"
+        message={`Are you sure you want to delete “${deleteModal.fileName}”? This action cannot be undone.`}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteDocument}
+        onCancel={() => setDeleteModal({ isOpen: false, docId: null, fileName: '', submitting: false })}
+        submitting={deleteModal.submitting}
+        isDanger
+      />
     </div>
   )
 }

@@ -845,6 +845,17 @@ body {
   gap: 8px;
 }
 
+.danger-primary-button {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.danger-primary-button:hover:not(:disabled) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
 .itinerary-day-number {
   margin-right: 14px;
   color: var(--accent);
