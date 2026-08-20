@@ -2,6 +2,7 @@ package com.tripnest.tripnest.service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,14 +21,19 @@ import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.TripMember;
 import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.model.User;
+import com.tripnest.tripnest.model.Itinerary;
 import com.tripnest.tripnest.repository.ActivityLogRepository;
+import com.tripnest.tripnest.repository.DocumentRepository;
+import com.tripnest.tripnest.repository.ExpenseRepository;
 import com.tripnest.tripnest.repository.ExpenseSplitRepository;
 import com.tripnest.tripnest.repository.FeedbackRepository;
+import com.tripnest.tripnest.repository.ItineraryRepository;
 import com.tripnest.tripnest.repository.NotificationRepository;
 import com.tripnest.tripnest.repository.PasswordResetTokenRepository;
 import com.tripnest.tripnest.repository.TripChatMessageRepository;
 import com.tripnest.tripnest.repository.TripInvitationRepository;
 import com.tripnest.tripnest.repository.TripMemberRepository;
+import com.tripnest.tripnest.repository.TripReminderRepository;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 
@@ -49,15 +55,40 @@ public class UserService {
     private final TripInvitationRepository tripInvitationRepository;
     private final TripMemberRepository tripMemberRepository;
     private final TripRepository tripRepository;
-    private final TripService tripService;
+    private final ExpenseRepository expenseRepository;
+    private final DocumentRepository documentRepository;
+    private final TripReminderRepository tripReminderRepository;
+    private final ItineraryRepository itineraryRepository;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+        if (authentication == null) {
             throw new IllegalArgumentException("Authenticated user not found");
         }
-        return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String email = null;
+        if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (userDetails.getUser() != null && userDetails.getUser().getId() != null) {
+                Optional<User> userOpt = userRepository.findById(userDetails.getUser().getId());
+                if (userOpt.isPresent()) {
+                    return userOpt.get();
+                }
+            }
+            email = userDetails.getUsername();
+        } else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails springUserDetails) {
+            email = springUserDetails.getUsername();
+        } else if (authentication.getPrincipal() instanceof String principalStr) {
+            email = principalStr;
+        }
+
+        if (email != null && !email.isBlank()) {
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if (userOpt.isPresent()) {
+                return userOpt.get();
+            }
+        }
+
+        throw new IllegalArgumentException("User not found");
     }
 
     private UserProfileResponse mapToProfileResponse(User user) {
@@ -214,7 +245,7 @@ public class UserService {
             Trip trip = membership.getTrip();
             if (trip.getUser().getId().equals(userId) || membership.getTripRole() == TripMemberRole.GROUP_ADMIN) {
                 if (tripRepository.existsById(trip.getId())) {
-                    tripService.deleteTrip(trip.getId());
+                    deleteTripCascadeInternal(trip.getId());
                 }
             } else {
                 tripMemberRepository.delete(membership);
@@ -225,11 +256,28 @@ public class UserService {
         List<Trip> ownedTrips = tripRepository.findByUser(user);
         for (Trip ownedTrip : ownedTrips) {
             if (tripRepository.existsById(ownedTrip.getId())) {
-                tripService.deleteTrip(ownedTrip.getId());
+                deleteTripCascadeInternal(ownedTrip.getId());
             }
         }
 
         // Delete user entity
         userRepository.delete(user);
+    }
+
+    private void deleteTripCascadeInternal(Long tripId) {
+        expenseSplitRepository.deleteByExpenseTripId(tripId);
+        expenseRepository.deleteByTripId(tripId);
+        tripMemberRepository.deleteByTripId(tripId);
+        tripInvitationRepository.deleteByTripId(tripId);
+        documentRepository.deleteByTripId(tripId);
+        tripChatMessageRepository.deleteByTripId(tripId);
+        tripReminderRepository.deleteByTripId(tripId);
+
+        List<Itinerary> itineraries = itineraryRepository.findByTripIdOrderByDateAscDayNumberAsc(tripId);
+        if (!itineraries.isEmpty()) {
+            itineraryRepository.deleteAll(itineraries);
+        }
+
+        tripRepository.deleteById(tripId);
     }
 }

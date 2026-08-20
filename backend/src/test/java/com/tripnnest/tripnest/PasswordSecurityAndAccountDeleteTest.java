@@ -21,12 +21,20 @@ import com.tripnest.tripnest.model.PasswordResetToken;
 import com.tripnest.tripnest.model.Role;
 import com.tripnest.tripnest.model.RoleName;
 import com.tripnest.tripnest.model.User;
+import com.tripnest.tripnest.repository.ActivityLogRepository;
+import com.tripnest.tripnest.repository.ExpenseSplitRepository;
+import com.tripnest.tripnest.repository.NotificationRepository;
 import com.tripnest.tripnest.repository.PasswordResetTokenRepository;
 import com.tripnest.tripnest.repository.RoleRepository;
+import com.tripnest.tripnest.repository.TripChatMessageRepository;
+import com.tripnest.tripnest.repository.TripInvitationRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 import com.tripnest.tripnest.service.PasswordResetService;
 import com.tripnest.tripnest.service.UserService;
 import com.tripnest.tripnest.util.PasswordPolicyValidator;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(classes = TripnestApplication.class)
 public class PasswordSecurityAndAccountDeleteTest {
@@ -44,18 +52,41 @@ public class PasswordSecurityAndAccountDeleteTest {
     private RoleRepository roleRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private ExpenseSplitRepository expenseSplitRepository;
+
+    @Autowired
+    private TripChatMessageRepository tripChatMessageRepository;
+
+    @Autowired
+    private TripInvitationRepository tripInvitationRepository;
+
+    @Autowired
+    private TripMemberRepository tripMemberRepository;
+
+    @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private com.tripnest.tripnest.repository.TripRepository tripRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     private User testUser;
+    private User toDeleteUser;
     private User adminUser;
     private Role travelerRole;
     private Role adminRole;
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         passwordResetTokenRepository.deleteAll();
 
         travelerRole = roleRepository.findByName(RoleName.ROLE_TRAVELER)
@@ -65,20 +96,45 @@ public class PasswordSecurityAndAccountDeleteTest {
                 .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.ROLE_ADMIN).build()));
 
         testUser = userRepository.findByEmail("secuser@example.com")
-                .orElseGet(() -> userRepository.save(User.builder()
+                .map(u -> {
+                    u.setFullName("Security Test User");
+                    u.setPassword(passwordEncoder.encode("OldSecret@2026"));
+                    u.setRoles(Set.of(travelerRole));
+                    return userRepository.saveAndFlush(u);
+                })
+                .orElseGet(() -> userRepository.saveAndFlush(User.builder()
                         .fullName("Security Test User")
                         .email("secuser@example.com")
                         .password(passwordEncoder.encode("OldSecret@2026"))
                         .roles(Set.of(travelerRole))
                         .build()));
 
+        toDeleteUser = userRepository.findByEmail("todelete@example.com")
+                .map(u -> {
+                    u.setFullName("ToDelete Traveler");
+                    u.setPassword(passwordEncoder.encode("OldSecret@2026"));
+                    u.setRoles(Set.of(travelerRole));
+                    return userRepository.saveAndFlush(u);
+                })
+                .orElseGet(() -> userRepository.saveAndFlush(User.builder()
+                        .fullName("ToDelete Traveler")
+                        .email("todelete@example.com")
+                        .password(passwordEncoder.encode("OldSecret@2026"))
+                        .roles(Set.of(travelerRole))
+                        .build()));
+
         adminUser = userRepository.findByEmail("admin@tripnest.com")
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .fullName("System Admin")
+                .orElseGet(() -> userRepository.saveAndFlush(User.builder()
+                        .fullName("System Administrator")
                         .email("admin@tripnest.com")
                         .password(passwordEncoder.encode("AdminSecret@2026"))
                         .roles(Set.of(adminRole))
                         .build()));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -140,7 +196,8 @@ public class PasswordSecurityAndAccountDeleteTest {
 
     @Test
     void testDeleteUserAccount_WrongPassword_Rejects() {
-        CustomUserDetails userDetails = new CustomUserDetails(testUser);
+        User user = userRepository.findByEmail("secuser@example.com").orElseThrow();
+        CustomUserDetails userDetails = new CustomUserDetails(user);
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -148,12 +205,13 @@ public class PasswordSecurityAndAccountDeleteTest {
         Exception ex = assertThrows(IllegalArgumentException.class, () -> userService.deleteCurrentUserAccount(deleteReq));
         assertTrue(ex.getMessage().contains("Invalid password"));
 
-        assertTrue(userRepository.existsById(testUser.getId()));
+        assertTrue(userRepository.existsById(user.getId()));
     }
 
     @Test
     void testDeleteUserAccount_SystemAdmin_Protected() {
-        CustomUserDetails adminDetails = new CustomUserDetails(adminUser);
+        User admin = userRepository.findByEmail("admin@tripnest.com").orElseThrow();
+        CustomUserDetails adminDetails = new CustomUserDetails(admin);
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(adminDetails, null, adminDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -161,18 +219,30 @@ public class PasswordSecurityAndAccountDeleteTest {
         Exception ex = assertThrows(IllegalArgumentException.class, () -> userService.deleteCurrentUserAccount(deleteReq));
         assertTrue(ex.getMessage().contains("System Administrator account cannot be deleted"));
 
-        assertTrue(userRepository.existsById(adminUser.getId()));
+        assertTrue(userRepository.existsById(admin.getId()));
     }
 
     @Test
     void testDeleteUserAccount_Success() {
-        CustomUserDetails userDetails = new CustomUserDetails(testUser);
+        Role role = roleRepository.findByName(RoleName.ROLE_TRAVELER).orElseThrow();
+        String uniqueEmail = "todelete_clean_" + System.currentTimeMillis() + "@example.com";
+
+        User user = userRepository.saveAndFlush(User.builder()
+                .fullName("ToDelete Traveler Clean")
+                .email(uniqueEmail)
+                .password(passwordEncoder.encode("OldSecret@2026"))
+                .roles(Set.of(role))
+                .build());
+
+        User freshUser = userRepository.findByEmail(uniqueEmail).orElseThrow();
+
+        CustomUserDetails userDetails = new CustomUserDetails(freshUser);
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         DeleteAccountRequest deleteReq = new DeleteAccountRequest("OldSecret@2026");
         assertDoesNotThrow(() -> userService.deleteCurrentUserAccount(deleteReq));
 
-        assertFalse(userRepository.existsById(testUser.getId()));
+        assertFalse(userRepository.existsById(freshUser.getId()));
     }
 }

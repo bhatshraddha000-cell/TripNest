@@ -32,5 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
-# Local backend auth config
+# Local backend auth & secrets
+.env
 .env.local
+.env.local.properties
+.env.production
+uploads/
+*.log

@@ -21,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -70,11 +71,12 @@ import com.tripnest.tripnest.security.JwtService;
                 "spring.datasource.username=sa",
                 "spring.datasource.password=",
                 "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.jpa.hibernate.ddl-auto=update",
                 "app.jwt.secret=test-jwt-secret-key-for-context-loading-123456789012345678901234567890",
                 "app.jwt.expiration-ms=3600000"
         }
 )
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class TripControllerTest {
 
     @LocalServerPort

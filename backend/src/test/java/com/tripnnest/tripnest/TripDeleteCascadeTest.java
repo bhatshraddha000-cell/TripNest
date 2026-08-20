@@ -26,6 +26,7 @@ import com.tripnest.tripnest.model.User;
 import com.tripnest.tripnest.repository.ActivityRepository;
 import com.tripnest.tripnest.repository.ItineraryRepository;
 import com.tripnest.tripnest.repository.RoleRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 import com.tripnest.tripnest.service.TripService;
@@ -46,6 +47,9 @@ public class TripDeleteCascadeTest {
     private ActivityRepository activityRepository;
 
     @Autowired
+    private TripMemberRepository tripMemberRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -57,6 +61,7 @@ public class TripDeleteCascadeTest {
     void setUp() {
         activityRepository.deleteAll();
         itineraryRepository.deleteAll();
+        tripMemberRepository.deleteAll();
         tripRepository.deleteAll();
 
         Role role = roleRepository.findByName(RoleName.ROLE_TRAVELER)
@@ -73,6 +78,11 @@ public class TripDeleteCascadeTest {
         CustomUserDetails userDetails = new CustomUserDetails(testUser);
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
