@@ -69,10 +69,13 @@ public class DataInitializer implements CommandLineRunner {
             jdbcTemplate.execute("DELETE FROM notifications WHERE receiver_id IN (" + dummyUserFilter + ")");
             jdbcTemplate.execute("DELETE FROM activity_logs WHERE user_id IN (" + dummyUserFilter + ")");
             jdbcTemplate.execute("DELETE FROM expense_splits WHERE user_id IN (" + dummyUserFilter + ")");
-            jdbcTemplate.execute("DELETE FROM trip_chat_messages WHERE sender_id IN (" + dummyUserFilter + ")");
-            jdbcTemplate.execute("DELETE FROM trip_invitations WHERE inviter_id IN (" + dummyUserFilter + ") OR receiver_id IN (" + dummyUserFilter + ")");
+            jdbcTemplate.execute("DELETE FROM trip_chat_messages WHERE user_id IN (" + dummyUserFilter + ")");
+            jdbcTemplate.execute("DELETE FROM trip_invitations WHERE sender_id IN (" + dummyUserFilter + ") OR receiver_id IN (" + dummyUserFilter + ")");
             jdbcTemplate.execute("DELETE FROM trip_reminders WHERE user_id IN (" + dummyUserFilter + ")");
             jdbcTemplate.execute("DELETE FROM trip_members WHERE user_id IN (" + dummyUserFilter + ")");
+            jdbcTemplate.execute("DELETE FROM documents WHERE uploaded_by_id IN (" + dummyUserFilter + ")");
+            jdbcTemplate.execute("DELETE FROM expenses WHERE paid_by_id IN (" + dummyUserFilter + ")");
+            jdbcTemplate.execute("UPDATE itineraries SET created_by_id = NULL WHERE created_by_id IN (" + dummyUserFilter + ")");
 
             String dummyTripFilter = "SELECT id FROM trips WHERE user_id IN (" + dummyUserFilter + ")";
             jdbcTemplate.execute("DELETE FROM documents WHERE trip_id IN (" + dummyTripFilter + ")");
@@ -90,7 +93,8 @@ public class DataInitializer implements CommandLineRunner {
             jdbcTemplate.execute("DELETE FROM users WHERE (email IN ('user1@example.com','user2@example.com','traveler@example.com','admin@example.com','abc@example.com','demo@example.com') OR full_name IN ('User One','User Two','Normal Traveler','System Admin','Traveler User','abc') OR id IN (582, 583)) AND email != 'admin@tripnest.com'");
             log.info("Direct SQL purge of dummy/demo users completed.");
         } catch (Exception e) {
-            log.warn("Error purging dummy users: {}", e.getMessage());
+            log.error("Error purging dummy users: {}", e.getMessage(), e);
+            throw e;
         }
     }
 }
