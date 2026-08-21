@@ -36,6 +36,13 @@ public class PasswordResetToken {
     @Column(nullable = false)
     private LocalDateTime expiryDate;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private int attempts = 0;
+
+    @Column(name = "last_requested_at")
+    private LocalDateTime lastRequestedAt;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;

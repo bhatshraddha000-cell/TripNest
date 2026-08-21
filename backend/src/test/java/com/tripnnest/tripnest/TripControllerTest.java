@@ -21,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,22 +45,38 @@ import com.tripnest.tripnest.model.User;
 import com.tripnest.tripnest.model.Itinerary;
 import com.tripnest.tripnest.model.Activity;
 import com.tripnest.tripnest.model.ActivityType;
+import com.tripnest.tripnest.model.TripMember;
+import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.repository.PasswordResetTokenRepository;
 import com.tripnest.tripnest.repository.RoleRepository;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
 import com.tripnest.tripnest.repository.ItineraryRepository;
 import com.tripnest.tripnest.repository.ActivityRepository;
+import com.tripnest.tripnest.repository.ExpenseRepository;
+import com.tripnest.tripnest.repository.ExpenseSplitRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
+import com.tripnest.tripnest.repository.TripInvitationRepository;
+import com.tripnest.tripnest.repository.DocumentRepository;
+import com.tripnest.tripnest.repository.ActivityLogRepository;
+import com.tripnest.tripnest.repository.NotificationRepository;
 import com.tripnest.tripnest.security.JwtService;
 
 @SpringBootTest(
         classes = TripnestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "app.jwt.secret=test-jwt-secret-key-for-context-loading-123456",
+                "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
+                "spring.datasource.driver-class-name=org.h2.Driver",
+                "spring.datasource.username=sa",
+                "spring.datasource.password=",
+                "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+                "spring.jpa.hibernate.ddl-auto=update",
+                "app.jwt.secret=test-jwt-secret-key-for-context-loading-123456789012345678901234567890",
                 "app.jwt.expiration-ms=3600000"
         }
 )
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class TripControllerTest {
 
     @LocalServerPort
@@ -84,6 +101,33 @@ public class TripControllerTest {
     private ActivityRepository activityRepository;
 
     @Autowired
+    private ExpenseRepository expenseRepository;
+
+    @Autowired
+    private ExpenseSplitRepository expenseSplitRepository;
+
+    @Autowired
+    private TripMemberRepository tripMemberRepository;
+
+    @Autowired
+    private TripInvitationRepository tripInvitationRepository;
+
+    @Autowired
+    private DocumentRepository documentRepository;
+
+    @Autowired
+    private ActivityLogRepository activityLogRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private com.tripnest.tripnest.repository.TripChatMessageRepository tripChatMessageRepository;
+
+    @Autowired
+    private com.tripnest.tripnest.repository.TripReminderRepository tripReminderRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -104,9 +148,18 @@ public class TripControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper().registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
         restTemplate = new RestTemplate();
+        tripChatMessageRepository.deleteAll();
+        expenseSplitRepository.deleteAll();
+        expenseRepository.deleteAll();
         activityRepository.deleteAll();
         itineraryRepository.deleteAll();
+        documentRepository.deleteAll();
+        tripMemberRepository.deleteAll();
+        tripInvitationRepository.deleteAll();
+        activityLogRepository.deleteAll();
+        notificationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
+        tripReminderRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -179,7 +232,7 @@ public class TripControllerTest {
 
     @Test
     void shouldRetrieveOnlyUserTrips() {
-        tripRepository.save(Trip.builder()
+        Trip tripA = tripRepository.save(Trip.builder()
                 .title("Trip A")
                 .destination("Destination A")
                 .startDate(LocalDate.now().plusDays(5))
@@ -189,8 +242,9 @@ public class TripControllerTest {
                 .status(TripStatus.PLANNING)
                 .user(user1)
                 .build());
+        tripMemberRepository.save(TripMember.builder().trip(tripA).user(user1).tripRole(TripMemberRole.GROUP_ADMIN).build());
 
-        tripRepository.save(Trip.builder()
+        Trip tripB = tripRepository.save(Trip.builder()
                 .title("Trip B")
                 .destination("Destination B")
                 .startDate(LocalDate.now().plusDays(5))
@@ -200,6 +254,7 @@ public class TripControllerTest {
                 .status(TripStatus.PLANNING)
                 .user(user2)
                 .build());
+        tripMemberRepository.save(TripMember.builder().trip(tripB).user(user2).tripRole(TripMemberRole.GROUP_ADMIN).build());
 
         HttpHeaders headers = getHeaders(token1);
         HttpEntity<Void> entity = new HttpEntity<>(headers);

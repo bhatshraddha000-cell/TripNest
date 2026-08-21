@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { itineraryApi } from '../../lib/itineraryApi.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const overlayStyle = { position: 'fixed', inset: 0, zIndex: 9999, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--bg) 74%, transparent)' }
 const modalStyle = { width: '100%', maxWidth: '520px', padding: '30px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }
 const inputStyle = { width: '100%', boxSizing: 'border-box', border: '1px solid var(--input-border)', background: 'var(--input-bg)', borderRadius: '12px', padding: '10px 14px', font: 'inherit', color: 'var(--input-text)' }
 
 function ItineraryManager({ trip }) {
+  const { user } = useAuth()
   const [itineraries, setItineraries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -90,15 +92,68 @@ function ItineraryManager({ trip }) {
   }
 
   return <section>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}><div><p className="eyebrow" style={{ marginBottom: '4px' }}>Itinerary</p><h3 style={{ fontSize: '1.4rem', margin: 0 }}>Day-by-Day Itinerary</h3></div><button className="primary-button" onClick={() => openModal('create')} disabled={loading}>Add Day</button></div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+      <div>
+        <p className="eyebrow" style={{ marginBottom: '4px' }}>YOUR JOURNEY</p>
+        <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Day-by-Day Journey Timeline</h3>
+      </div>
+      <button className="primary-button" onClick={() => openModal('create')} disabled={loading}>+ Add Itinerary Day</button>
+    </div>
     {notice && <div className="status-message success" style={{ marginBottom: '16px' }} role="status">{notice}</div>}
     {error && <div className="status-message error" style={{ marginBottom: '16px' }} role="alert">{error}</div>}
-    {loading ? <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--paragraph)' }}>Loading itinerary...</div> : itineraries.length === 0 ? <div className="itinerary-empty-state"><h4>No itinerary has been created for this trip yet.</h4><p>Start planning the day-by-day details of your escape.</p><button className="primary-button" onClick={() => openModal('create')}>Create First Day</button></div> : <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {itineraries.map((day) => <article key={day.id} className="itinerary-day-card">
-        <div className="itinerary-day-header" onClick={() => setExpandedDays((current) => ({ ...current, [day.id]: !current[day.id] }))}><div><strong className="itinerary-day-number">Day {day.dayNumber}</strong><strong>{day.title}</strong><span className="itinerary-day-date">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span></div><div className="itinerary-day-actions" onClick={(event) => event.stopPropagation()}><Link to={`/activity-scheduler/${day.id}`} className="secondary-button compact-button" style={{ textDecoration: 'none' }}>Manage Activities</Link><button className="secondary-button compact-button" onClick={() => openModal('edit', day)}>Edit</button><button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: day.id, title: `Day ${day.dayNumber}: ${day.title}`, submitting: false })}>Delete</button></div></div>
-        {expandedDays[day.id] && <div className="itinerary-day-content">{day.notes && <p className="itinerary-day-notes">{day.notes}</p>}<div className="activities-heading"><div><h4>Activities</h4><span>{day.activities?.length ?? 0} scheduled for this day.</span></div></div></div>}
-      </article>)}
-    </div>}
+    {loading ? (
+      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--paragraph)' }}>Loading itinerary...</div>
+    ) : itineraries.length === 0 ? (
+      <div className="itinerary-empty-state">
+        <h4>No itinerary has been created for this trip yet.</h4>
+        <p>Start planning the day-by-day journey of your escape.</p>
+        <button className="primary-button" onClick={() => openModal('create')}>Create First Day</button>
+      </div>
+    ) : (
+      <div className="journey-timeline-container">
+        {itineraries.map((day) => {
+          const canModifyDay = trip.tripRole === 'GROUP_ADMIN' || day.createdByUserId === user?.userId;
+          return (
+            <div key={day.id} className="journey-step-wrapper">
+              <div className="journey-step-badge">{day.dayNumber}</div>
+              <article className="itinerary-day-card">
+                <div className="itinerary-day-header" onClick={() => setExpandedDays((current) => ({ ...current, [day.id]: !current[day.id] }))}>
+                  <div>
+                    <strong className="itinerary-day-number">DAY {day.dayNumber}</strong>
+                    <strong>{day.title}</strong>
+                    <span className="itinerary-day-date">
+                      📅 {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="itinerary-day-actions" onClick={(event) => event.stopPropagation()}>
+                    <Link to={`/activity-scheduler/${day.id}`} className="primary-button compact-button" style={{ textDecoration: 'none', fontSize: '0.82rem' }}>
+                      Schedule Activities ➔
+                    </Link>
+                    {canModifyDay && (
+                      <>
+                        <button className="secondary-button compact-button" onClick={() => openModal('edit', day)}>Edit</button>
+                        <button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: day.id, title: `Day ${day.dayNumber}: ${day.title}`, submitting: false })}>Delete</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {expandedDays[day.id] && (
+                  <div className="itinerary-day-content">
+                    {day.notes && <p className="itinerary-day-notes">{day.notes}</p>}
+                    <div className="activities-heading">
+                      <div>
+                        <h4>Scheduled Activities</h4>
+                        <span>{day.activities?.length ?? 0} activities scheduled for this day.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </article>
+            </div>
+          )
+        })}
+      </div>
+    )}
 
     {modal.isOpen && <Modal title={modal.mode === 'create' ? 'Add Itinerary Day' : 'Edit Itinerary Day'}>{modal.error && <div className="status-message error">{modal.error}</div>}<form onSubmit={saveDay} className="itinerary-form"><div className="itinerary-form-grid"><Field label="Day Number" error={modal.fieldErrors.dayNumber}><input type="number" min="1" value={modal.formData.dayNumber} onChange={(event) => updateField('dayNumber', event.target.value)} disabled={modal.submitting} /></Field><Field label="Date" error={modal.fieldErrors.date}><input type="date" value={modal.formData.date} onChange={(event) => updateField('date', event.target.value)} disabled={modal.submitting} /></Field></div><Field label="Day Title" error={modal.fieldErrors.title}><input value={modal.formData.title} onChange={(event) => updateField('title', event.target.value)} disabled={modal.submitting} /></Field><Field label="Notes (Optional)"><textarea rows="3" value={modal.formData.notes} onChange={(event) => updateField('notes', event.target.value)} disabled={modal.submitting} style={inputStyle} /></Field><ModalActions onCancel={() => setModal((current) => ({ ...current, isOpen: false }))} submitting={modal.submitting} saveLabel="Save Day" /></form></Modal>}
     {deleteModal.isOpen && <Modal title="Delete Day Plan?" narrow><p className="modal-description">Are you sure you want to delete “{deleteModal.title}”? This action cannot be undone.</p><div className="modal-actions"><button className="secondary-button" onClick={() => setDeleteModal((current) => ({ ...current, isOpen: false }))} disabled={deleteModal.submitting}>Keep</button><button className="primary-button danger-primary-button" onClick={deleteDay} disabled={deleteModal.submitting}>{deleteModal.submitting ? 'Deleting...' : 'Yes, Delete'}</button></div></Modal>}

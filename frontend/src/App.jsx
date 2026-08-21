@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
@@ -15,6 +15,15 @@ import TripDetailsPage from './pages/TripDetailsPage.jsx'
 import ComingSoonPage from './pages/ComingSoonPage.jsx'
 import ItineraryPage from './pages/ItirneraryPage.jsx'
 import ActivitySchedulerPage from './pages/ActivitySchedulerPage.jsx'
+import DestinationsPage from './pages/DestinationsPage.jsx'
+import DestinationDetailsPage from './pages/DestinationDetailsPage.jsx'
+import AttractionDetailsPage from './pages/AttractionDetailsPage.jsx'
+import PublicDestinationDetailsPage from './pages/PublicDestinationDetailsPage.jsx'
+import AnalyticsPage from './pages/AnalyticsPage.jsx'
+import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
+import ContactPage from './pages/ContactPage.jsx'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage.jsx'
+import TermsPage from './pages/TermsPage.jsx'
 import './App.css'
 
 function App() {
@@ -22,6 +31,9 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -33,6 +45,34 @@ function App() {
             <DashboardPage />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={<Navigate to="/admin/dashboard" replace />}
       />
       <Route
         path="/profile"
@@ -106,6 +146,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/explore/:destinationName" element={<PublicDestinationDetailsPage />} />
       <Route
         path="/explore"
         element={
@@ -118,23 +159,23 @@ function App() {
         path="/destinations"
         element={
           <ProtectedRoute>
-            <ComingSoonPage title="Destinations Guide" />
+            <DestinationsPage />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/bookings"
+        path="/destinations/:tripId"
         element={
           <ProtectedRoute>
-            <ComingSoonPage title="My Bookings" />
+            <DestinationDetailsPage />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/settings"
+        path="/attraction/:xid"
         element={
           <ProtectedRoute>
-            <ComingSoonPage title="Account Settings" />
+            <AttractionDetailsPage />
           </ProtectedRoute>
         }
       />

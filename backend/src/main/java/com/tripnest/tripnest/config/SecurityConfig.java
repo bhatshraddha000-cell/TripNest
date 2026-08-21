@@ -1,7 +1,7 @@
 package com.tripnest.tripnest.config;
 
 import java.util.List;
-
+import org.springframework.http.HttpMethod;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,15 +49,28 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/reset-password",
+                                "/api/health"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/users/me").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Destination APIs - Public Read Access
+                        .requestMatchers(HttpMethod.GET, "/api/destinations/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/uploads/profiles/**").permitAll()
+
+                        // Public Feedback APIs
+                        .requestMatchers("/api/feedback/**").permitAll()
+
+                        // Destination APIs - Admin Only Write Access
+                        .requestMatchers(HttpMethod.POST, "/api/destinations/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/destinations/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/destinations/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
+
                 )
-                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -78,9 +91,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        List<String> origins = allowedOrigins != null ? allowedOrigins.stream()
+                .flatMap(s -> java.util.Arrays.stream(s.split(",")))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList() : List.of("http://localhost:5173", "http://127.0.0.1:5173");
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

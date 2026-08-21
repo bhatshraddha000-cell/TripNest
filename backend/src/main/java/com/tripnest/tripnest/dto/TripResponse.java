@@ -30,4 +30,6 @@ public class TripResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long ownerId;
+    private String tripRole;
 }
+

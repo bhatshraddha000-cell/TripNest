@@ -23,6 +23,8 @@ import com.tripnest.tripnest.security.JwtService;
 
 import lombok.RequiredArgsConstructor;
 
+import com.tripnest.tripnest.util.PasswordPolicyValidator;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -36,6 +38,9 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        // Enforce strong password policy before user creation
+        PasswordPolicyValidator.validate(request.getPassword());
 
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new DuplicateEmailException(normalizedEmail);
@@ -83,6 +88,7 @@ public class AuthService {
                 .userId(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
+                .profileImage(user.getProfileImage())
                 .roles(user.getRoles().stream()
                         .map(role -> role.getName().name())
                         .collect(Collectors.toSet()))

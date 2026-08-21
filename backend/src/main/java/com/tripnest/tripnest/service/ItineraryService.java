@@ -18,9 +18,13 @@ import com.tripnest.tripnest.model.CustomUserDetails;
 import com.tripnest.tripnest.model.Itinerary;
 import com.tripnest.tripnest.model.Trip;
 import com.tripnest.tripnest.model.User;
+import com.tripnest.tripnest.model.TripMember;
+import com.tripnest.tripnest.model.TripMemberRole;
 import com.tripnest.tripnest.repository.ItineraryRepository;
 import com.tripnest.tripnest.repository.TripRepository;
 import com.tripnest.tripnest.repository.UserRepository;
+import com.tripnest.tripnest.repository.TripMemberRepository;
+import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +35,8 @@ public class ItineraryService {
     private final ItineraryRepository itineraryRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final TripMemberRepository tripMemberRepository;
+    private final ActivityLogService activityLogService;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -42,9 +48,25 @@ public class ItineraryService {
     }
 
     private Trip getAuthenticatedTrip(Long tripId, User user) {
-        return tripRepository.findByIdAndUser(tripId, user)
-                .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(tripId, user.getId());
+        if (membershipOpt.isEmpty()) {
+            Trip trip = tripRepository.findById(tripId)
+                    .orElseThrow(() -> new TripNotFoundException("Trip not found"));
+            if (trip.getUser().getId().equals(user.getId())) {
+                TripMember member = TripMember.builder()
+                        .trip(trip)
+                        .user(user)
+                        .tripRole(TripMemberRole.GROUP_ADMIN)
+                        .build();
+                tripMemberRepository.save(member);
+                return trip;
+            } else {
+                throw new TripNotFoundException("Trip not found");
+            }
+        }
+        return membershipOpt.get().getTrip();
     }
+
 
     private void validateItineraryDate(Trip trip, java.time.LocalDate date) {
         if (date.isBefore(trip.getStartDate()) || date.isAfter(trip.getEndDate())) {
@@ -89,6 +111,7 @@ public class ItineraryService {
                 .title(itinerary.getTitle())
                 .notes(itinerary.getNotes())
                 .tripId(itinerary.getTrip().getId())
+                .createdByUserId(itinerary.getCreatedBy() != null ? itinerary.getCreatedBy().getId() : null)
                 .createdAt(itinerary.getCreatedAt())
                 .updatedAt(itinerary.getUpdatedAt())
                 .activities(activityResponses)
@@ -116,9 +139,11 @@ public class ItineraryService {
                 .title(request.getTitle())
                 .notes(request.getNotes())
                 .trip(trip)
+                .createdBy(user)
                 .build();
 
         Itinerary saved = itineraryRepository.save(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", saved.getId(), "CREATED", "Itinerary Created", "Created itinerary \"" + saved.getTitle() + "\"");
         return mapItineraryToResponse(saved);
     }
 
@@ -152,6 +177,18 @@ public class ItineraryService {
         Itinerary itinerary = itineraryRepository.findByIdAndTripId(itineraryId, tripId)
                 .orElseThrow(() -> new TripNotFoundException("Itinerary not found"));
 
+        // Authorization check: Group Admin can edit anything. Normal Member can only edit own itineraries.
+        TripMemberRole userRole = TripMemberRole.GROUP_ADMIN;
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(tripId, user.getId());
+        if (membershipOpt.isPresent()) {
+            userRole = membershipOpt.get().getTripRole();
+        }
+        if (userRole != TripMemberRole.GROUP_ADMIN) {
+            if (itinerary.getCreatedBy() == null || !itinerary.getCreatedBy().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("Only the creator of this itinerary or the Group Admin can edit it");
+            }
+        }
+
         validateItineraryDate(trip, request.getDate());
 
         if (!itinerary.getDayNumber().equals(request.getDayNumber()) 
@@ -170,6 +207,7 @@ public class ItineraryService {
         itinerary.setNotes(request.getNotes());
 
         Itinerary saved = itineraryRepository.save(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", saved.getId(), "UPDATED", "Itinerary Updated", "Updated itinerary \"" + saved.getTitle() + "\"");
         return mapItineraryToResponse(saved);
     }
 
@@ -181,6 +219,22 @@ public class ItineraryService {
         Itinerary itinerary = itineraryRepository.findByIdAndTripId(itineraryId, tripId)
                 .orElseThrow(() -> new TripNotFoundException("Itinerary not found"));
 
+        // Authorization check: Group Admin can delete anything. Normal Member can only delete own itineraries.
+        TripMemberRole userRole = TripMemberRole.GROUP_ADMIN;
+        Optional<TripMember> membershipOpt = tripMemberRepository.findByTripIdAndUserId(tripId, user.getId());
+        if (membershipOpt.isPresent()) {
+            userRole = membershipOpt.get().getTripRole();
+        }
+        if (userRole != TripMemberRole.GROUP_ADMIN) {
+            if (itinerary.getCreatedBy() == null || !itinerary.getCreatedBy().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("Only the creator of this itinerary or the Group Admin can delete it");
+            }
+        }
+
+        String title = itinerary.getTitle();
+        Long id = itinerary.getId();
         itineraryRepository.delete(itinerary);
+        activityLogService.logActivity(user, "ITINERARY", id, "DELETED", "Itinerary Deleted", "Deleted itinerary \"" + title + "\"");
     }
+
 }

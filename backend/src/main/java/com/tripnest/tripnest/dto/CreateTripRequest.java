@@ -2,6 +2,8 @@ package com.tripnest.tripnest.dto;
 
 import java.time.LocalDate;
 
+import com.tripnest.tripnest.model.TripStatus;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -38,6 +40,8 @@ public class CreateTripRequest {
     @NotNull(message = "Budget is required")
     @DecimalMin(value = "0.0", message = "Budget cannot be negative")
     private Double budget;
+
+    private TripStatus status;
 
     private String description;
 }

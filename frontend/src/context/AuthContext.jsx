@@ -64,8 +64,8 @@ export function AuthProvider({ children }) {
 
       setAuthToken(token)
       setIsAuthenticated(true)
-      await loadCurrentUser()
-      return response.data
+      const loggedInUser = await loadCurrentUser()
+      return { ...response.data, user: loggedInUser }
     } catch (error) {
       if (error.message === 'Login response did not include a token') {
         setAuthToken(null)

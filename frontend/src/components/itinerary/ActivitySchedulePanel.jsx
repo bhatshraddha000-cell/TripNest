@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { activityApi } from '../../lib/activityApi.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const activityTypes = [
   ['SIGHTSEEING', 'Sightseeing'],
@@ -15,7 +17,8 @@ const overlayStyle = { position: 'fixed', inset: 0, zIndex: 9999, padding: '20px
 const modalStyle = { width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', padding: '30px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }
 const inputStyle = { width: '100%', boxSizing: 'border-box', border: '1px solid var(--input-border)', background: 'var(--input-bg)', borderRadius: '12px', padding: '10px 14px', font: 'inherit', color: 'var(--input-text)' }
 
-function ActivitySchedulePanel({ tripId, itineraryId }) {
+function ActivitySchedulePanel({ tripId, itineraryId, tripRole }) {
+  const { user } = useAuth()
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -62,7 +65,25 @@ function ActivitySchedulePanel({ tripId, itineraryId }) {
     if (!data.activityType) fieldErrors.activityType = 'Activity type is required'
     if (!data.location.trim()) fieldErrors.location = 'Location is required'
     if (data.estimatedCost === '' || !Number.isFinite(Number(data.estimatedCost)) || Number(data.estimatedCost) < 0) fieldErrors.estimatedCost = 'Estimated cost must be a non-negative number'
-    if (data.startTime && data.endTime && data.endTime < data.startTime) fieldErrors.endTime = 'End time cannot be before start time'
+    if (data.startTime && data.endTime) {
+      if (data.endTime < data.startTime) {
+        fieldErrors.endTime = 'End time cannot be before start time'
+      } else {
+        const isOverlap = activities.some((act) => {
+          if (modal.mode === 'edit' && act.id === modal.id) return false
+          if (!act.startTime || !act.endTime) return false
+          const actStart = act.startTime.slice(0, 5)
+          const actEnd = act.endTime.slice(0, 5)
+          return data.startTime < actEnd && data.endTime > actStart
+        })
+        if (isOverlap) {
+          const msg = 'This activity overlaps with an existing activity on this itinerary day. Please choose a different time range.'
+          fieldErrors.startTime = msg
+          setModal((current) => ({ ...current, error: msg }))
+        }
+      }
+    }
+
     if (Object.keys(fieldErrors).length) {
       setModal((current) => ({ ...current, fieldErrors }))
       return
@@ -97,26 +118,95 @@ function ActivitySchedulePanel({ tripId, itineraryId }) {
 
   const sortedActivities = [...activities].sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'))
 
+  const getTypeBadgeClass = (value) => {
+    switch (value) {
+      case 'SIGHTSEEING': return 'type-sightseeing'
+      case 'DINING': return 'type-dining'
+      case 'TRANSPORTATION': return 'type-transportation'
+      case 'ACCOMMODATION': return 'type-accommodation'
+      case 'ADVENTURE': return 'type-adventure'
+      case 'SHOPPING': return 'type-shopping'
+      default: return 'type-sightseeing'
+    }
+  }
+
   return <section>
     <div className="activities-heading">
-      <div><p className="eyebrow" style={{ marginBottom: '4px' }}>Activity Scheduling</p><h3 style={{ margin: 0 }}>Travel timeline</h3><span>Activities are ordered by start time.</span></div>
+      <div>
+        <p className="eyebrow" style={{ marginBottom: '4px' }}>ACTIVITY SCHEDULE</p>
+        <h3 style={{ margin: 0 }}>Chronological Activity Timeline</h3>
+        <span style={{ fontSize: '0.85rem', color: 'var(--paragraph)' }}>Activities are ordered chronologically by start time.</span>
+      </div>
       <button className="primary-button" onClick={() => openModal('create')} disabled={loading}>+ Add Activity</button>
     </div>
     {notice && <div className="status-message success" style={{ marginBottom: '16px' }} role="status">{notice}</div>}
     {error && <div className="status-message error" style={{ marginBottom: '16px' }} role="alert">{error}</div>}
-    {loading ? <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--paragraph)' }}>Loading activities...</div> : sortedActivities.length === 0 ? <div className="itinerary-empty-state"><h4>No activities scheduled yet.</h4><p>Add the first activity for this itinerary day.</p><button className="primary-button" onClick={() => openModal('create')}>Add Activity</button></div> : <div className="activity-timeline">
-      {sortedActivities.map((activity) => <article className="timeline-item" key={activity.id}>
-        <div className="timeline-time">{formatTime(activity.startTime)}</div><div className="timeline-marker" aria-hidden="true" />
-        <div className="activity-card-content">
-          <div className="activity-card-heading"><div><span className="activity-type">{typeLabel(activity.activityType)}</span><h5>{activity.title}</h5></div><strong className="activity-cost">{activity.estimatedCost > 0 ? `₹${activity.estimatedCost.toLocaleString('en-IN')}` : 'Free'}</strong></div>
-          <p className="activity-location">Location: {activity.location}</p>
-          {(activity.startTime || activity.endTime) && <p className="activity-meta">{formatTime(activity.startTime)}{activity.endTime ? ` – ${formatTime(activity.endTime)}` : ''}</p>}
-          {activity.description && <p className="activity-description">{activity.description}</p>}
-          {activity.notes && <p className="activity-notes">Notes: {activity.notes}</p>}
-          <div className="activity-actions"><button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button><button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button></div>
-        </div>
-      </article>)}
-    </div>}
+    {loading ? (
+      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--paragraph)' }}>Loading activities...</div>
+    ) : sortedActivities.length === 0 ? (
+      <div className="itinerary-empty-state">
+        <h4>No activities scheduled yet.</h4>
+        <p>Add the first activity to build your time schedule for this day.</p>
+        <button className="primary-button" onClick={() => openModal('create')}>+ Add Activity</button>
+      </div>
+    ) : (
+      <div className="activity-timeline">
+        {sortedActivities.map((activity) => (
+          <article className="timeline-item" key={activity.id}>
+            <div className="timeline-time">
+              <span className="schedule-time-pill" style={{ fontSize: '0.78rem' }}>
+                ⏱ {formatTime(activity.startTime)}
+              </span>
+            </div>
+            <div className="timeline-marker" aria-hidden="true" />
+            <div className="activity-card-content" style={{ borderRadius: '16px', padding: '18px' }}>
+              <div className="activity-card-heading" style={{ marginBottom: '8px' }}>
+                <div>
+                  <span className={`activity-type-badge ${getTypeBadgeClass(activity.activityType)}`}>
+                    {typeLabel(activity.activityType)}
+                  </span>
+                  <h5 style={{ fontSize: '1.1rem', margin: '4px 0 0 0', color: 'var(--text)' }}>
+                    {activity.title}
+                  </h5>
+                </div>
+                <strong className="activity-cost" style={{ fontSize: '1.05rem', color: 'var(--accent, #cd7b2f)' }}>
+                  {activity.estimatedCost > 0 ? `₹${activity.estimatedCost.toLocaleString('en-IN')}` : 'Free'}
+                </strong>
+              </div>
+
+              <p className="activity-location" style={{ margin: '4px 0 8px 0', color: 'var(--paragraph)', fontSize: '0.88rem' }}>
+                📍 {activity.location}
+              </p>
+
+              {(activity.startTime || activity.endTime) && (
+                <p className="activity-meta" style={{ margin: '0 0 8px 0', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)' }}>
+                  🕒 Time: {formatTime(activity.startTime)}{activity.endTime ? ` – ${formatTime(activity.endTime)}` : ''}
+                </p>
+              )}
+
+              {activity.description && <p className="activity-description" style={{ margin: '4px 0' }}>{activity.description}</p>}
+              {activity.notes && <p className="activity-notes" style={{ margin: '4px 0', fontStyle: 'italic' }}>Notes: {activity.notes}</p>}
+
+              <div className="activity-actions" style={{ marginTop: '14px' }}>
+                {(tripRole === 'GROUP_ADMIN' || activity.createdByUserId === user?.userId) && (
+                  <>
+                    <button className="secondary-button compact-button" onClick={() => openModal('edit', activity)}>Edit</button>
+                    <button className="secondary-button compact-button danger-button" onClick={() => setDeleteModal({ isOpen: true, id: activity.id, title: activity.title, submitting: false })}>Delete</button>
+                  </>
+                )}
+                <Link 
+                  to={`/trips/${tripId}?tab=expenses&activityId=${activity.id}&amount=${activity.estimatedCost}&title=${encodeURIComponent(activity.title)}`} 
+                  className="secondary-button compact-button" 
+                  style={{ textDecoration: 'none', color: '#2f7aa3', borderColor: '#2f7aa3' }}
+                >
+                  Add Actual Expense
+                </Link>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
 
     {modal.isOpen && <Modal title={modal.mode === 'create' ? 'Schedule Activity' : 'Edit Activity'}>
       <p className="modal-description">Add the time, place, and cost details to keep this travel day on track.</p>
