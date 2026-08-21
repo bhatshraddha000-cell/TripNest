@@ -1,7 +1,10 @@
 package com.tripnest.tripnest.model;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -45,6 +48,13 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column(name = "profile_image", length = 500)
+    private String profileImage;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = true)
+    private LocalDateTime createdAt;
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})

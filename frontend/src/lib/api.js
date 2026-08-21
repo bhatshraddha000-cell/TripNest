@@ -32,3 +32,17 @@ api.interceptors.request.use((config) => {
 
   return config
 })
+
+export function getProfileImageUrl(profileImage) {
+  if (!profileImage) return ''
+  if (
+    profileImage.startsWith('http://') ||
+    profileImage.startsWith('https://') ||
+    profileImage.startsWith('blob:') ||
+    profileImage.startsWith('data:')
+  ) {
+    return profileImage
+  }
+  const baseURL = api.defaults.baseURL || 'http://localhost:8081'
+  return `${baseURL}${profileImage.startsWith('/') ? '' : '/'}${profileImage}`
+}

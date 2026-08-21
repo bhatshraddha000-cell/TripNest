@@ -5,17 +5,23 @@ const AuthContext = createContext(null)
 
 function normalizeError(error, fallbackMessage) {
   const responseData = error?.response?.data
+  const message = responseData?.message ?? error?.message ?? fallbackMessage
 
   if (responseData?.errors && typeof responseData.errors === 'object') {
     return {
-      message: responseData.message ?? fallbackMessage,
+      message,
       fieldErrors: responseData.errors,
     }
   }
 
+  const fieldErrors = {}
+  if (error?.response?.status === 409 || message.toLowerCase().includes('already registered')) {
+    fieldErrors.email = 'This email address is already registered. Please sign in instead.'
+  }
+
   return {
-    message: responseData?.message ?? fallbackMessage,
-    fieldErrors: {},
+    message: fieldErrors.email ? 'This email address is already registered.' : message,
+    fieldErrors,
   }
 }
 
@@ -79,6 +85,10 @@ export function AuthProvider({ children }) {
     setAuthToken(null)
     setUser(null)
     setIsAuthenticated(false)
+  }
+
+  function updateUser(updates) {
+    setUser((current) => (current ? { ...current, ...updates } : current))
   }
 
   useEffect(() => {
@@ -153,6 +163,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     loadCurrentUser,
+    updateUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
