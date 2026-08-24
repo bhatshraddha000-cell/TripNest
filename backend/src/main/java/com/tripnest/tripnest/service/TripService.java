@@ -28,6 +28,9 @@ import com.tripnest.tripnest.repository.TripInvitationRepository;
 import com.tripnest.tripnest.repository.ExpenseRepository;
 import com.tripnest.tripnest.repository.ExpenseSplitRepository;
 import com.tripnest.tripnest.repository.DocumentRepository;
+import com.tripnest.tripnest.repository.ItineraryRepository;
+import com.tripnest.tripnest.repository.TripReminderRepository;
+import com.tripnest.tripnest.model.Itinerary;
 
 import lombok.RequiredArgsConstructor;
 import java.util.Optional;
@@ -45,6 +48,8 @@ public class TripService {
     private final ExpenseSplitRepository expenseSplitRepository;
     private final DocumentRepository documentRepository;
     private final com.tripnest.tripnest.repository.TripChatMessageRepository tripChatMessageRepository;
+    private final ItineraryRepository itineraryRepository;
+    private final TripReminderRepository tripReminderRepository;
 
 
     private User getAuthenticatedUser() {
@@ -235,13 +240,20 @@ public class TripService {
         String tripTitle = trip.getTitle();
         Long tripId = trip.getId();
 
-        // Clean up new associations before deletion
+        // Clean up all dependent associations before deletion
         expenseSplitRepository.deleteByExpenseTripId(tripId);
         expenseRepository.deleteByTripId(tripId);
         tripMemberRepository.deleteByTripId(tripId);
         tripInvitationRepository.deleteByTripId(tripId);
         documentRepository.deleteByTripId(tripId);
         tripChatMessageRepository.deleteByTripId(tripId);
+        tripReminderRepository.deleteByTripId(tripId);
+
+        // Delete associated itinerary days (which cascades to child activities via JPA orphanRemoval/cascade)
+        List<Itinerary> itineraries = itineraryRepository.findByTripIdOrderByDateAscDayNumberAsc(tripId);
+        if (!itineraries.isEmpty()) {
+            itineraryRepository.deleteAll(itineraries);
+        }
 
         tripRepository.delete(trip);
         activityLogService.logActivity(user, "TRIP", tripId, "DELETED", "Trip Deleted", "Deleted trip \"" + tripTitle + "\"");

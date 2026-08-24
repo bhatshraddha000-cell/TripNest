@@ -21,4 +21,6 @@ public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, Long
     void deleteByExpenseId(Long expenseId);
 
     void deleteByExpenseTripId(Long tripId);
+
+    void deleteByUserId(Long userId);
 }

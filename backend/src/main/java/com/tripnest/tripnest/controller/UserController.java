@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tripnest.tripnest.dto.DeleteAccountRequest;
 import com.tripnest.tripnest.dto.UpdateProfileRequest;
 import com.tripnest.tripnest.dto.UserProfileResponse;
 import com.tripnest.tripnest.service.UserService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -43,6 +45,12 @@ public class UserController {
     @DeleteMapping("/me/photo")
     public ResponseEntity<UserProfileResponse> removeProfilePhoto() {
         return ResponseEntity.ok(userService.removeProfilePhoto());
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Map<String, String>> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+        userService.deleteCurrentUserAccount(request);
+        return ResponseEntity.ok(Map.of("message", "Your TripNest account has been deleted."));
     }
 
     @GetMapping("/search")

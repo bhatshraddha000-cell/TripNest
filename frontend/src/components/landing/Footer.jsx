@@ -13,24 +13,24 @@ function Footer() {
 
       <div className="footer-links">
         <h4>Quick Links</h4>
-        <a href="#home">Home</a>
-        <a href="#features">Features</a>
-        <a href="#destinations">Destinations</a>
+        <Link to="/">Home</Link>
+        <Link to="/#features">Features</Link>
+        <Link to="/#destinations">Destinations</Link>
       </div>
 
       <div className="footer-links">
         <h4>Support</h4>
-        <a href="#contact">Contact</a>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms</a>
+        <Link to="/contact">Contact</Link>
+        <Link to="/privacy-policy">Privacy Policy</Link>
+        <Link to="/terms">Terms</Link>
       </div>
 
       <div className="footer-links">
         <h4>Follow</h4>
         <div className="social-links">
-          <a href="#">Instagram</a>
-          <a href="#">X</a>
-          <a href="#">LinkedIn</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://x.com" target="_blank" rel="noopener noreferrer">X</a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         </div>
       </div>
     </footer>

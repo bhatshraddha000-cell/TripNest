@@ -13,4 +13,6 @@ public interface TripReminderRepository extends JpaRepository<TripReminder, Long
     boolean existsByTripIdAndReminderType(Long tripId, String reminderType);
 
     Optional<TripReminder> findByTripIdAndReminderType(Long tripId, String reminderType);
+
+    void deleteByTripId(Long tripId);
 }

@@ -19,6 +19,12 @@ function ProfilePage() {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
   const [resetPasswordStatus, setResetPasswordStatus] = useState({ type: '', message: '' })
 
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteModalError, setDeleteModalError] = useState('')
+
   const currentPhotoUrl = isPhotoRemoved
     ? ''
     : previewAvatar || getProfileImageUrl(user?.profileImage)
@@ -216,6 +222,29 @@ function ProfilePage() {
     }
   }
 
+  async function handleDeleteAccount(e) {
+    e.preventDefault()
+    if (!deletePassword) {
+      setDeleteModalError('Please enter your current password to confirm account deletion.')
+      return
+    }
+
+    setDeletingAccount(true)
+    setDeleteModalError('')
+
+    try {
+      await api.delete('/api/users/me', { data: { password: deletePassword } })
+      setShowDeleteModal(false)
+      logout()
+      navigate('/login', { state: { notice: 'Your TripNest account has been deleted.' } })
+    } catch (error) {
+      const message = error?.response?.data?.message ?? 'Unable to delete your account right now. Please try again.'
+      setDeleteModalError(message)
+    } finally {
+      setDeletingAccount(false)
+    }
+  }
+
   return (
     <div className="app-shell dashboard-layout">
       <div className="dashboard-shell">
@@ -333,12 +362,143 @@ function ProfilePage() {
                       </button>
                     </div>
                   </div>
+
+                  <div className="profile-card profile-danger-zone" style={{ border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+                    <div className="security-header">
+                      <h3 style={{ color: '#ef4444' }}>⚠️ Danger Zone</h3>
+                      <p>Permanently delete your TripNest account and associated account data. This action cannot be undone.</p>
+                    </div>
+
+                    <div className="security-actions">
+                      <button
+                        className="primary-button security-btn"
+                        type="button"
+                        onClick={() => {
+                          setDeletePassword('')
+                          setDeleteModalError('')
+                          setShowDeleteModal(true)
+                        }}
+                        style={{ background: '#ef4444', borderColor: '#ef4444' }}
+                      >
+                        Delete My Account
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
           </main>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDeleteModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="confirmation-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              padding: '30px',
+              borderRadius: '20px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
+              color: 'var(--text)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--heading)', fontWeight: 600 }}>Delete Account?</h3>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingAccount}
+                aria-label="Close modal"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  lineHeight: 1,
+                  padding: '4px',
+                }}
+              >
+                &times;
+              </button>
+            </div>
+            <p className="modal-description" style={{ color: 'var(--paragraph)', fontSize: '0.925rem', lineHeight: '1.5', margin: '0 0 20px 0' }}>
+              Are you sure you want to permanently delete your TripNest account? This action cannot be undone and will remove your profile and personal data.
+            </p>
+
+            {deleteModalError ? (
+              <div className="status-message error" style={{ padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
+                {deleteModalError}
+              </div>
+            ) : null}
+
+            <form onSubmit={handleDeleteAccount}>
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="deletePassword" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--heading)' }}>
+                  Enter your password to confirm *
+                </label>
+                <input
+                  id="deletePassword"
+                  type="password"
+                  required
+                  placeholder="Current account password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  disabled={deletingAccount}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    background: 'var(--input-bg)',
+                    color: 'var(--input-text)',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="primary-button danger-primary-button"
+                  disabled={deletingAccount || !deletePassword}
+                  style={{ background: '#ef4444', borderColor: '#ef4444', color: '#ffffff' }}
+                >
+                  {deletingAccount ? 'Deleting...' : 'Delete Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

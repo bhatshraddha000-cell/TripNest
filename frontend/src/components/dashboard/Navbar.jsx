@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Home, Bell } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { getProfileImageUrl } from '../../lib/api.js'
@@ -300,7 +301,7 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
           onClick={() => navigate('/')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          <span>🏠</span>
+          <Home size={18} />
           <span>Home</span>
         </button>
 
@@ -327,8 +328,9 @@ function Navbar({ userName, userEmail, onLogout, profileImage }) {
             type="button"
             aria-label="Notifications"
             onClick={() => setIsOpen(!isOpen)}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            🔔
+            <Bell size={18} />
             {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
           </button>
 

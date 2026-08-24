@@ -13,4 +13,6 @@ public interface TripChatMessageRepository extends JpaRepository<TripChatMessage
     List<TripChatMessage> findByTripIdOrderByCreatedAtAsc(Long tripId);
 
     void deleteByTripId(Long tripId);
+
+    void deleteBySenderId(Long senderId);
 }

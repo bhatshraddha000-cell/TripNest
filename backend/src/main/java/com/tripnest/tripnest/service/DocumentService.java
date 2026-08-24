@@ -90,8 +90,10 @@ public class DocumentService {
         }
 
         // Store file
-        String generatedName = documentStorageService.storeDocument(file);
-        String fileUrl = "/api/documents/download/" + generatedName;
+        String storedReference = documentStorageService.storeDocument(file);
+        String fileUrl = (storedReference.startsWith("http://") || storedReference.startsWith("https://"))
+                ? storedReference
+                : "/api/documents/download/" + storedReference;
 
         Document doc = Document.builder()
                 .trip(trip)
@@ -138,12 +140,10 @@ public class DocumentService {
     public Resource downloadDocument(String filename, List<String> outFileName) {
         User user = getAuthenticatedUser();
         
-        // Find document by fileUrl containing the filename
         String lookupUrl = "/api/documents/download/" + filename;
-        // In java streams or repository search
         List<Document> docs = documentRepository.findAll();
         Document doc = docs.stream()
-                .filter(d -> d.getFileUrl().equals(lookupUrl))
+                .filter(d -> d.getFileUrl().equals(lookupUrl) || d.getFileUrl().endsWith("/" + filename) || d.getFileUrl().contains(filename))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Document not found"));
 
@@ -155,7 +155,10 @@ public class DocumentService {
         }
 
         outFileName.add(doc.getFileName());
-        return documentStorageService.loadDocument(filename);
+        String target = doc.getFileUrl().startsWith("http://") || doc.getFileUrl().startsWith("https://") 
+                ? doc.getFileUrl() 
+                : filename;
+        return documentStorageService.loadDocument(target);
     }
 
     @Transactional
@@ -175,11 +178,12 @@ public class DocumentService {
             throw new SecurityException("Only uploader or Group Admin can delete this document");
         }
 
-        // Extract filename from fileUrl
         String fileUrl = doc.getFileUrl();
-        String filename = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        String targetToDelete = fileUrl.startsWith("http://") || fileUrl.startsWith("https://")
+                ? fileUrl
+                : fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
 
-        documentStorageService.deleteDocumentFile(filename);
+        documentStorageService.deleteDocumentFile(targetToDelete);
         documentRepository.delete(doc);
 
         activityLogService.logActivity(user, "TRIP", trip.getId(), "DOCUMENT_DELETED", "Document Deleted", "Deleted document \"" + doc.getFileName() + "\"");

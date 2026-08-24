@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/reset-password",
+                                "/api/health"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/users/me").authenticated()
@@ -60,6 +61,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/uploads/profiles/**").permitAll()
 
+                        // Public Feedback APIs
+                        .requestMatchers("/api/feedback/**").permitAll()
+
                         // Destination APIs - Admin Only Write Access
                         .requestMatchers(HttpMethod.POST, "/api/destinations/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/destinations/**").hasRole("ADMIN")
@@ -67,7 +71,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
 
                 )
-                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -88,9 +91,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        List<String> origins = allowedOrigins != null ? allowedOrigins.stream()
+                .flatMap(s -> java.util.Arrays.stream(s.split(",")))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList() : List.of("http://localhost:5173", "http://127.0.0.1:5173");
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

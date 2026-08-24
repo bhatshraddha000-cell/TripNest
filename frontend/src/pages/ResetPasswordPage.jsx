@@ -37,8 +37,9 @@ function ResetPasswordPage() {
     if (!formData.otp.trim() || formData.otp.length !== 6) {
       errors.otp = 'A valid 6-digit OTP code is required'
     }
-    if (formData.newPassword.length < 8) {
-      errors.newPassword = 'Password must be at least 8 characters long'
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+    if (!passwordRegex.test(formData.newPassword)) {
+      errors.newPassword = 'Password must be at least 8 characters and contain an uppercase letter, lowercase letter, number, and special character.'
     }
     if (formData.newPassword !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match'
