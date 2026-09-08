@@ -78,6 +78,12 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+
+  if (isAdmin) {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
   useEffect(() => {
     if (!isAuthenticated || isAdminUser(user)) return
     let isMounted = true

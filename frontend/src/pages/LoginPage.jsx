@@ -17,6 +17,7 @@ function LoginPage() {
   const [status, setStatus] = useState({ type: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
 
+<<<<<<< HEAD
   if (isAuthenticated && !authLoading) {
     if (isAdminUser(user)) {
       return <Navigate to="/admin/dashboard" replace />
@@ -26,6 +27,15 @@ function LoginPage() {
       ? requestedPath
       : '/dashboard'
     return <Navigate to={destination} replace />
+=======
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+  const redirectTo = location.state?.from?.pathname
+  const defaultTarget = isAdmin ? '/admin/dashboard' : '/dashboard'
+  const target = redirectTo && redirectTo !== '/' ? redirectTo : defaultTarget
+
+  if (isAuthenticated && !authLoading) {
+    return <Navigate to={target} replace />
+>>>>>>> 6af8402bf11363144da344341433c065053e76d7
   }
 
   function handleChange(event) {
@@ -41,6 +51,7 @@ function LoginPage() {
     setStatus({ type: '', message: '' })
 
     try {
+<<<<<<< HEAD
       const loginRes = await login(formData)
       const currentUser = loginRes?.user || user
       if (isAdminUser(currentUser)) {
@@ -52,6 +63,12 @@ function LoginPage() {
           : '/dashboard'
         navigate(destination, { replace: true })
       }
+=======
+      const authResult = await login(formData)
+      const isLoggedAdmin = authResult?.roles?.includes('ADMIN') || authResult?.role === 'ADMIN'
+      const destination = redirectTo && redirectTo !== '/' ? redirectTo : (isLoggedAdmin ? '/admin/dashboard' : '/dashboard')
+      navigate(destination, { replace: true })
+>>>>>>> 6af8402bf11363144da344341433c065053e76d7
     } catch (error) {
       setFieldErrors(error.fieldErrors ?? {})
       setStatus({ type: 'error', message: error.message })
