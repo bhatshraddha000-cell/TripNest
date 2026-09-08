@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, isAuthenticated, authLoading } = useAuth()
+  const { login, isAuthenticated, authLoading, user } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,10 +16,13 @@ function LoginPage() {
   const [status, setStatus] = useState({ type: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
 
-  const redirectTo = location.state?.from?.pathname ?? '/'
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.role === 'ADMIN'
+  const redirectTo = location.state?.from?.pathname
+  const defaultTarget = isAdmin ? '/admin/dashboard' : '/dashboard'
+  const target = redirectTo && redirectTo !== '/' ? redirectTo : defaultTarget
 
   if (isAuthenticated && !authLoading) {
-    return <Navigate to={redirectTo} replace />
+    return <Navigate to={target} replace />
   }
 
   function handleChange(event) {
@@ -35,8 +38,10 @@ function LoginPage() {
     setStatus({ type: '', message: '' })
 
     try {
-      await login(formData)
-      navigate(redirectTo, { replace: true })
+      const authResult = await login(formData)
+      const isLoggedAdmin = authResult?.roles?.includes('ADMIN') || authResult?.role === 'ADMIN'
+      const destination = redirectTo && redirectTo !== '/' ? redirectTo : (isLoggedAdmin ? '/admin/dashboard' : '/dashboard')
+      navigate(destination, { replace: true })
     } catch (error) {
       setFieldErrors(error.fieldErrors ?? {})
       setStatus({ type: 'error', message: error.message })

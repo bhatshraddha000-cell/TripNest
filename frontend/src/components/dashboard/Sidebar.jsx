@@ -9,7 +9,6 @@ function Sidebar() {
 
   const items = isAdmin
     ? [
-        { label: 'Dashboard', path: '/dashboard' },
         { label: 'Admin Dashboard', path: '/admin/dashboard' },
       ]
     : [

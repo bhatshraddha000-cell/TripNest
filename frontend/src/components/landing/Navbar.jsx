@@ -209,8 +209,8 @@ function Navbar({ searchValue, onSearchChange }) {
         </button>
 
         {isAuthenticated ? (
-          <Link className="text-link dashboard-link" to="/dashboard">
-            Dashboard
+          <Link className="text-link dashboard-link" to={user?.roles?.includes('ADMIN') || user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'}>
+            {user?.roles?.includes('ADMIN') || user?.role === 'ADMIN' ? 'Admin Dashboard' : 'Dashboard'}
           </Link>
         ) : (
           <Link className="text-link" to="/login">
