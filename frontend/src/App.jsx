@@ -31,13 +31,16 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
+
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsPage />} />
+
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+
       <Route
         path="/dashboard"
         element={
@@ -46,6 +49,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/analytics"
         element={
@@ -54,6 +58,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/dashboard"
         element={
@@ -62,6 +67,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin-dashboard"
         element={
@@ -70,10 +76,12 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin"
         element={<Navigate to="/admin/dashboard" replace />}
       />
+
       <Route
         path="/profile"
         element={
@@ -82,6 +90,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips"
         element={
@@ -90,6 +99,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips/new"
         element={
@@ -98,6 +108,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips/:id"
         element={
@@ -106,6 +117,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips/:id/edit"
         element={
@@ -114,6 +126,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/itinerary/:tripId"
         element={
@@ -122,6 +135,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/itinerary"
         element={
@@ -130,6 +144,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/activity-scheduler/:itineraryId"
         element={
@@ -138,6 +153,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/activity-scheduler"
         element={
@@ -146,7 +162,12 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/explore/:destinationName" element={<PublicDestinationDetailsPage />} />
+
+      <Route
+        path="/explore/:destinationName"
+        element={<PublicDestinationDetailsPage />}
+      />
+
       <Route
         path="/explore"
         element={
@@ -155,6 +176,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/destinations"
         element={
@@ -163,6 +185,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/destinations/:tripId"
         element={
@@ -171,6 +194,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/attraction/:xid"
         element={
@@ -179,6 +203,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
